@@ -5,6 +5,9 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "baseUrl": "./",
+    "paths": {
+      "nostr-tools/pool": ["node_modules/nostr-tools/lib/types/pool.d.ts"]
+    },
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,

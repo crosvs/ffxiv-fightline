@@ -2,6 +2,8 @@ import { IAuthenticationService } from "./authentication/authentication.service-
 import { authenticationServiceProvider, authenticationServiceToken } from "./authentication/authentication.service-provider";
 import { IFightService } from "./fight/fight.service-interface";
 import { fightServiceToken, fightServiceProvider } from "./fight/fight.service-provider";
+import { INostrService } from "./nostr/nostr.service-interface";
+import { nostrServiceToken, nostrServiceProvider } from "./nostr/nostr.service-provider";
 import { DialogService } from "./DialogService";
 import { RecentActivityService } from "./RecentActivitiesService";
 import { SettingsService } from "./SettingsService";
@@ -34,6 +36,9 @@ export {
   authenticationServiceToken,
   fightServiceProvider,
   fightServiceToken,
+  INostrService,
+  nostrServiceProvider,
+  nostrServiceToken,
   FFXIVApiService,
   FightHubService,
   IChangeNote,
@@ -54,6 +59,7 @@ export const ServicesModuleComponents =
     ChangeNotesService,
     authenticationServiceProvider,
     fightServiceProvider,
+    nostrServiceProvider,
     Gameserviceprovider.gameServiceProvider,
     UserStorageService,
     VisStorageService,
