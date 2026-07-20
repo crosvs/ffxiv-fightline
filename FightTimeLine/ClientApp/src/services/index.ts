@@ -10,7 +10,6 @@ import { ScreenNotificationsService } from "./ScreenNotificationsService";
 import { LocalStorageService } from "./LocalStorageService";
 import { DispatcherPayloads, DispatcherService } from "./dispatcher.service";
 import { ChangeNotesService, IChangeNote } from "./changeNotes.service";
-import { FightHubService, IConnectToSessionHandlers, IStartSessionHandlers } from "./FightHubService";
 import * as Gameserviceprovider from "./game.service-provider";
 import { FFXIVApiService } from "./FFxivApiService";
 import { VisStorageService } from "./VisStorageService";
@@ -25,8 +24,6 @@ export {
   SessionStorageService,
   LocalStorageService,
   DispatcherService,
-  IConnectToSessionHandlers,
-  IStartSessionHandlers,
   fightServiceProvider,
   fightServiceToken,
   INostrService,
@@ -34,7 +31,6 @@ export {
   nostrServiceToken,
   NostrStatusService,
   FFXIVApiService,
-  FightHubService,
   IChangeNote,
   ChangeNotesService
 };
@@ -48,7 +44,6 @@ export const ServicesModuleComponents =
     LocalStorageService,
     SessionStorageService,
     { provide: "DispatcherPayloads", useFactory: () => new DispatcherService<DispatcherPayloads>() },
-    FightHubService,
     ChangeNotesService,
     fightServiceProvider,
     nostrServiceProvider,

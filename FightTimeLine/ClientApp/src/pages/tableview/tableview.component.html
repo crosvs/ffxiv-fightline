@@ -5,16 +5,6 @@
       (changed)="optionsChanged($event)"
     ></tableviewoptions>
   </span>
-  <span style="display: inline-flex; margin-left: 20px">
-    <avatarWithPing
-      *ngFor="let user of fightHubService.users"
-      [owner]="false"
-      textSizeRatio="3"
-      [name]="user.name"
-      [id]="user.id"
-      [ngStyle]="{ 'margin-right': '2px' }"
-    ></avatarWithPing>
-  </span>
 </toolbar>
 <div class="content noselect" (click)="select(null, $event)">
   <nz-table

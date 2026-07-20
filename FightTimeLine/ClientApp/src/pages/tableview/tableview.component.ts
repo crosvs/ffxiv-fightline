@@ -5,8 +5,6 @@ import {
   Inject,
   ViewChild,
   HostListener,
-  QueryList,
-  ViewChildren,
 } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { SettingsService } from "../../services/SettingsService";
@@ -24,13 +22,11 @@ import { IGameService } from "../../services/game.service-interface";
 
 import * as FightTimeLineController from "../../core/FightTimeLineController";
 import * as Generators from "../../core/Generators";
-import { ICommandData } from "../../core/UndoRedo";
 import { DescriptiveTemplate } from "../../core/ExportTemplates/DescriptiveTemplate";
 import * as ExportModels from "../../core/ExportModels";
 import { VisStorageService } from "../../services/VisStorageService";
 import { IFightSerializeData } from "../../core/SerializeController";
 import { MitigationsTemplate } from "../../core/ExportTemplates/MitigationsTemplate";
-import { PingComponent } from "../../components/ping/ping.component";
 import { DispatcherPayloads } from "../../services/dispatcher.service";
 import { Utils } from "../../core/Utils";
 import { Location } from "@angular/common";
@@ -66,7 +62,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
 
   @ViewChild("sidepanel", { static: true }) sidepanel: SidepanelComponent;
   @ViewChild("progressBar", { static: true }) progressBar: NgProgressbar;
-  @ViewChildren(PingComponent) pings: QueryList<PingComponent>;
 
   set: ExportModels.IExportResultSet = {
     columns: [],
@@ -121,7 +116,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
     private router: Router,
     @Inject("DispatcherPayloads")
     private dispatcher: S.DispatcherService<DispatcherPayloads>,
-    public fightHubService: S.FightHubService,
     private settingsService: SettingsService
   ) {}
 
@@ -178,15 +172,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
     return fn;
   }
 
-  ping(id: string, owner: boolean): void {
-    const pingComponent = this.pings.find(
-      (it) => it.id === id || (owner && it.owner === owner)
-    );
-    if (pingComponent) {
-      pingComponent.ping();
-    }
-  }
-
   ngOnInit(): void {
     this.visStorage.clear();
     this.gameService.jobRegistry.setLevel(100);
@@ -204,9 +189,7 @@ export class TableViewComponent implements OnInit, OnDestroy {
     this.fightLineController.commandExecuted.subscribe((data) => {
       this.fightService
         .addCommand(this.fightId, JSON.stringify(data))
-        .subscribe((result) => {
-          this.fightHubService.sendCommand(this.fightId, "", result.id);
-        });
+        .subscribe();
       this.loadTable();
       this.sidepanel.refresh();
     });
@@ -272,19 +255,17 @@ export class TableViewComponent implements OnInit, OnDestroy {
                     loadedData,
                     value.map((cmd) => JSON.parse(cmd.data))
                   );
-                  this.connectToSession().finally(() => {
-                    this.gameService.jobRegistry.setLevel(100);
-                    this.tpl = new this.templates[
-                      this.template.toLowerCase()
-                    ]();
-                    this.tplExecutedSub = this.tpl.onExecuted.subscribe(
-                      (data) => {
-                        this.fightLineController.combineAndExecute([data]);
-                      }
-                    );
-                    this.loadTable();
-                    ref.close();
-                  });
+                  this.gameService.jobRegistry.setLevel(100);
+                  this.tpl = new this.templates[
+                    this.template.toLowerCase()
+                  ]();
+                  this.tplExecutedSub = this.tpl.onExecuted.subscribe(
+                    (data) => {
+                      this.fightLineController.combineAndExecute([data]);
+                    }
+                  );
+                  this.loadTable();
+                  ref.close();
                 },
                 error: (error) => {
                   console.error(error);
@@ -542,53 +523,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
       }
     }
     console.log(ev);
-  }
-
-  async connectToSession() {
-    const handlers: S.IConnectToSessionHandlers = {
-      onCommand: ((data: M.IHubCommand) =>
-        this.handleRemoteCommand(data.id, data.userId)).bind(this),
-      onConnected: ((data: M.IHubUser) =>
-        this.notification.showUserConnected(data)).bind(this),
-      onDisconnected: ((data: M.IHubUser) =>
-        this.notification.showUserDisconnected(data)).bind(this),
-    };
-
-    const settings = this.settingsService.load();
-    const name = settings.teamwork.displayName || "Anonymous";
-    try {
-      await this.fightHubService.connect(this.fightId, name, handlers);
-      this.notification.showConnectedToSession();
-    } catch {
-      this.notification.showConnectedToSessionError();
-    }
-  }
-
-  stopSession() {
-    this.fightHubService.disconnect(this.fightId);
-  }
-
-  handleRemoteCommand(id: string, userId: string) {
-    this.ping(userId, false);
-
-    this.fightService.getCommand(+id).subscribe(
-      (data: ICommandData) => {
-        this.handleRemoteCommandData(data);
-      },
-      (error) => {
-        console.log(error);
-      }
-    );
-  }
-
-  handleRemoteCommandData(data: ICommandData) {
-    this.fightLineController.execute(data);
-    this.loadTable();
-  }
-
-  @HostListener("window:unload", ["$event"])
-  unloadHandler(event: any) {
-    this.stopSession();
   }
 
   @HostListener("window:resize", ["$event"])

@@ -34,7 +34,6 @@
     "@ant-design/icons": "^5.4.0",
     "@biesbjerg/ngx-translate-extract-marker": "^1.0.0",
     "@egjs/hammerjs": "^2.0.17",
-    "@microsoft/signalr": "^8.0.7",
     "@ngx-translate/core": "^15.0.0",
     "@ngx-translate/http-loader": "^8.0.0",
     "@sentry/browser": "8.27.0",
