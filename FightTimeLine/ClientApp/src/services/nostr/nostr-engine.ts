@@ -260,8 +260,27 @@ function wireEventSize(event: NostrEvent): number {
 /** Matches a NIP-01 `OK false <reason>` reason that rejects an event specifically for its size. */
 const SIZE_REJECTION_PATTERN = /too large|too big|max.{0,20}(size|length)|size.{0,20}(exceed|limit)/i;
 
+/**
+ * Matches nostr-tools' own generic hard-close error text ("relay connection failed"/"relay
+ * connection closed"/"websocket closed" — see abstract-relay.js's `ws.onerror`/`ws.onclose`
+ * handlers), which is what a relay's *silent* size rejection actually surfaces as in practice: a
+ * relay confirmed already-reachable this session (an earlier small event round-tripped fine) that
+ * abruptly hangs up the instant it receives an oversized EVENT frame, with no OK-false message at
+ * all. Verified against the real relay list while building this port — nos.lol and nostr.mom both
+ * did exactly this for a ~390KB event, never producing text SIZE_REJECTION_PATTERN could match, so
+ * relying on that pattern alone would silently skip the chunking ladder for precisely the failure
+ * mode it exists to handle. Deliberately does NOT match a plain "publish timed out" — a relay that
+ * just never responds is a different, genuinely-unreachable failure, not evidence of a size
+ * rejection worth spending a chunking ladder on.
+ */
+const HARD_CLOSE_PATTERN = /relay connection (failed|closed)|websocket closed/i;
+
+function looksLikeSizeRejection(reason: string): boolean {
+  return SIZE_REJECTION_PATTERN.test(reason) || HARD_CLOSE_PATTERN.test(reason);
+}
+
 function learnSizeLimitFromRejection(relay: string, event: NostrEvent, reason: string): void {
-  if (!SIZE_REJECTION_PATTERN.test(reason)) return;
+  if (!looksLikeSizeRejection(reason)) return;
   const learned = wireEventSize(event) - 1;
   const existing = _relayLimitsCache.get(relay)?.maxMessageLength;
   if (existing === undefined || learned < existing) {
@@ -879,7 +898,7 @@ async function tryPublishSet(relay: string, events: NostrEvent[]): Promise<{ ok:
     if (result.status === 'rejected') {
       const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
       learnSizeLimitFromRejection(relay, events[i]!, reason);
-      if (SIZE_REJECTION_PATTERN.test(reason)) sizeRejected = true;
+      if (looksLikeSizeRejection(reason)) sizeRejected = true;
     }
   });
   return { ok: results.every((r) => r.status === 'fulfilled'), sizeRejected };
