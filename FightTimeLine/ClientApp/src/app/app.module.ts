@@ -50,6 +50,7 @@ import { KeyHandlerDirective } from "../helpers/keyHandler.directive";
 import { KillsOnlyPipe } from "../helpers/KillsPipe";
 import { NoDraftsPipe } from "../helpers/NoDraftsPipe";
 import { PingComponent } from "../components/ping/ping.component";
+import { NostrStatusComponent } from "../components/nostr-status/nostr-status.component";
 import * as Sentry from "@sentry/browser";
 import { AngularSplitModule } from "angular-split";
 import { environment } from "../environments/environment";
@@ -235,6 +236,7 @@ export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
     MultipleDownTimeComponent,
     WarningsComponent,
     NoDraftsPipe,
+    NostrStatusComponent,
     OffsetWheelDirective,
     PingComponent,
     PlanAreaComponent,
