@@ -2,19 +2,13 @@ import { InjectionToken } from "@angular/core";
 
 import { NostrService } from "./nostr.service";
 import { INostrService } from "./nostr.service-interface";
-import { NostrMockService } from "./nostr.service-mock";
 
-import { environment } from "../../environments/environment";
-
-const nostrServiceFactory = () => {
-  let serviceToReturn: INostrService;
-  if (environment.production) {
-    serviceToReturn = new NostrService();
-  } else {
-    serviceToReturn = new NostrMockService();
-  }
-  return serviceToReturn;
-};
+// No dev/prod branching here, unlike fight.service-provider.ts's old real-HTTP-vs-mock split —
+// there's nothing unsafe or costly about hitting real Nostr relays in dev, and faking it produces
+// exactly the bug that motivated removing the mock: a "shared" link that only ever resolves
+// against whatever's in the current browser's own local storage, not a real relay-backed link
+// usable from anywhere else.
+const nostrServiceFactory = (): INostrService => new NostrService();
 
 export let nostrServiceToken = new InjectionToken("INostrService");
 
