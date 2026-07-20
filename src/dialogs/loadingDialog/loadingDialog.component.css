@@ -15,14 +15,6 @@
   padding: 4px 0;
 }
 
-.loading-nostr__icon {
-  /* Fixed footprint regardless of the ring's content state, so nothing else in this dialog can
-     shift around it. */
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-}
-
 .loading-nostr__text {
   white-space: nowrap;
 }

@@ -73,6 +73,10 @@ export class NostrStatusComponent implements OnInit {
    *  by the caller (e.g. a caller tracking one specific in-flight fetch would pass fetchStatus$). */
   @Input() relayStatus$?: Observable<RelayStatusEntry[]>;
   @Input() size = SIZE;
+  /** Also renders the per-relay breakdown as a static, always-visible list (in addition to the
+   *  hover popover) — for placements like the loading dialog where the whole component can be
+   *  torn down again within a second or two, leaving no reliable window to actually hover it. */
+  @Input() showBreakdownInline = false;
 
   readonly svgSize = SIZE;
   readonly circumference = CIRCUMFERENCE;

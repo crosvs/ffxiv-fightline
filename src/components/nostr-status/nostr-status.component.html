@@ -44,6 +44,10 @@
   </svg>
 </span>
 
+<div *ngIf="showBreakdownInline" class="nostr-status__inline">
+  <ng-container *ngTemplateOutlet="relayBreakdown"></ng-container>
+</div>
+
 <ng-template #relayBreakdown>
   <div class="nostr-status__breakdown">
     <div class="nostr-status__row" *ngFor="let relay of relays$ | async">

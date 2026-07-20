@@ -1,3 +1,14 @@
+/* The custom element defaults to display:inline, which lets its content interact oddly with a
+   flex-column ancestor (e.g. the loading dialog) once it grows taller than a single line — the
+   next flex sibling can end up overlapping it instead of stacking cleanly underneath. Laying the
+   host out as its own centered flex column keeps the ring centered with the (optional) inline
+   breakdown stacked cleanly below it, regardless of how tall that breakdown gets. */
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .nostr-status {
   display: inline-flex;
   align-items: center;
@@ -33,6 +44,15 @@
   flex-direction: column;
   gap: 4px;
   min-width: 180px;
+}
+
+.nostr-status__inline {
+  margin-top: 8px;
+  text-align: left;
+}
+
+.nostr-status__inline .nostr-status__breakdown {
+  min-width: 0;
 }
 
 .nostr-status__row {

@@ -183,7 +183,10 @@ export class DialogService {
         nzWrapClassName: "vertical-center-modal",
         nzContent: D.LoadingDialog,
         nzTitle: null,
-        nzWidth: typeof text === "string" ? 150 : 220,
+        // The Nostr variant now also shows a static per-relay breakdown (not hover-gated, since
+        // this dialog can close again within a second or two) — wide enough for a relay hostname
+        // plus its status label without wrapping/clipping.
+        nzWidth: typeof text === "string" ? 150 : 300,
         nzClosable: false,
         nzKeyboard: false,
         nzOkDisabled: true,
