@@ -1,27 +1,50 @@
-# ClientApp
+# FFXIV FightLine
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.3.4.
+A timeline-based tool for planning and analyzing party cooldowns and buffs for Final Fantasy XIV
+raid encounters — lay out job abilities, mitigations, and boss attacks on a shared timeline, import
+real pull data from FFLogs, and share a plan with a portable link.
 
-## Development server
+This is a fully static, serverless app. There is no backend, no account system, and no database —
+persistence works like this:
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+- **Drafts are local.** Creating a new fight, importing from FFLogs, and the "Load" dialog all work
+  entirely in your browser (IndexedDB), whether or not you ever share anything.
+- **Sharing is [Nostr](https://nostr.com/).** Publishing a fight or boss template signs it with a
+  locally-generated keypair and broadcasts it to a handful of public relays. Opening a shared link
+  reads it back from those same relays — no fightline-owned server is ever involved. See
+  [`nostr/`](nostr/) for the full design.
+- **Your key is your identity.** There's no login. The toolbar's identity menu lets you export your
+  key (back it up — it's the only way to keep access to anything you've published), import one on
+  another device, or generate a new one.
 
-## Code scaffolding
+## Development
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Requires Node.js (no .NET, no database, no other prerequisites).
 
-## Build
+```bash
+npm install
+npm start          # dev server at http://localhost:4200
+npm run build      # production build to dist/browser
+```
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+To pull real fight data from [FFLogs](https://www.fflogs.com/), add your own personal FFLogs API
+key in the in-app settings dialog (FFLogs tab) — this talks to FFLogs' API directly from your
+browser, nothing proxies through this project.
 
-## Running unit tests
+## Deployment
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Pushing to `master` builds and deploys to GitHub Pages automatically
+(`.github/workflows/deploy-pages.yml`), publishing under the repo's default Pages subpath. The
+build passes `--base-href` accordingly; if you fork this and deploy to a custom domain instead,
+drop that flag (or set it to `/`) and add your own `CNAME`.
 
-## Running end-to-end tests
+## Project layout
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+- `src/core/` — the timing/ability engine: attack processors, FFLogs import/parsing, export
+  templates. Framework-agnostic TypeScript.
+- `src/services/nostr/` — the Nostr protocol layer (ported from
+  [XIVPlan](https://github.com/xivplan/xivplan)'s `nostr.ts`) and its Angular service wrapper.
+- `src/services/fight/` — local draft persistence (IndexedDB), following the same
+  interface/provider pattern as every other service in `src/services/`.
+- `nostr/` — design docs for the Nostr integration: architecture, key management, relay consensus,
+  publishing/chunking, fetching/repair, vault listing, sharing URLs, and a porting guide.
