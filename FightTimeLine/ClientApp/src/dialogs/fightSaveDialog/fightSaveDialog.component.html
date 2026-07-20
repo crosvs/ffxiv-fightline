@@ -1,4 +1,4 @@
-<div mat-dialog-content style="height: 70px;">
+<div mat-dialog-content>
   <form nz-form>
     <nz-form-item>
       <nz-form-control nzHasFeedback [nzValidateStatus]="submitted && fightNameControl.errors && fightNameControl.errors.required?'error':''" nzErrorTip="You must enter a value">
@@ -6,6 +6,21 @@
       </nz-form-control>
     </nz-form-item>
   </form>
+
+  <div class="nostr-publish-section">
+    <div class="nostr-publish-row">
+      <span>Share as a portable link (no account needed to open):</span>
+      <nostr-status *ngIf="publishingNostr" [progress$]="nostrStatus.publishProgress$"></nostr-status>
+    </div>
+    <div class="nostr-publish-row">
+      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('public')">Publish (public)</button>
+      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('private')">Publish (only me)</button>
+    </div>
+    <div *ngIf="nostrShareUrl" class="nostr-share-url">
+      <input nz-input readonly [value]="nostrShareUrl" #nostrUrlInput (click)="nostrUrlInput.select()" />
+    </div>
+  </div>
+
   <div *nzModalFooter>
     <button nz-button (click)="onNoClick()">{{'dialog.cancel' | translate}}</button>
     <button nz-button nzType="primary" (click)="onSaveAsNewClick()" *ngIf="!!data.id" cdkFocusInitial>{{'dialog.saveAsNew' | translate}}</button>

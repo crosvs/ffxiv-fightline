@@ -606,9 +606,12 @@ function decodePubkeyToken(token: string): string | undefined {
 export function parseInputPubkey(input: string): string {
   input = input.trim();
 
-  const hashIdx = input.indexOf('#/nostr/');
-  if (hashIdx !== -1) {
-    const rest = input.slice(hashIdx + '#/nostr/'.length);
+  const pathIdx = input.indexOf('/nostr/');
+  if (pathIdx !== -1) {
+    // rest is "<docType>/<pubToken>/<idToken>..." — skip the docType segment to reach the pubkey.
+    const afterNostr = input.slice(pathIdx + '/nostr/'.length);
+    const firstSlash = afterNostr.indexOf('/');
+    const rest = firstSlash > 0 ? afterNostr.slice(firstSlash + 1) : afterNostr;
     const slash = rest.indexOf('/');
     const pubSegment = slash > 0 ? rest.slice(0, slash) : rest;
     const decoded = decodePubkeyToken(pubSegment);
@@ -632,8 +635,12 @@ export function parseInputPubkey(input: string): string {
 }
 
 // ── URL helpers ───────────────────────────────────────────────────────────────
-// fightline's route is `#/nostr/<docType>/<pubToken>/<idToken>`, one segment longer than
-// XIVPlan's `#/nostr/<pubToken>/<idToken>` — needed since a URL alone must disambiguate a fight
+// fightline's route is a real path segment, `/nostr/<docType>/<pubToken>/<idToken>` — unlike
+// XIVPlan (which uses a `#/nostr/...` hash fragment throughout), fightline's router already uses
+// Angular's PathLocationStrategy everywhere else (`:fightId`, `fflogs/:code`, ...), and a hash
+// fragment is invisible to Angular's path-based route matching — it would need a separate,
+// special-cased parsing path alongside the router instead of a normal route. The extra `docType`
+// segment (absent from XIVPlan's URL) is needed since a URL alone must disambiguate a fight
 // share-link from a boss-variant share-link (two independent kind pairs, same pubkey namespace).
 
 export type NostrDocType = 'fight' | 'boss';
@@ -641,7 +648,7 @@ export type NostrDocType = 'fight' | 'boss';
 export function getNostrShareUrl(docType: NostrDocType, pubkey: string, id: string): string {
   const pubToken = bytesToBase64Url(hexToBytes(pubkey));
   const idToken = bytesToBase64Url(hexToBytes(id));
-  return `${location.protocol}//${location.host}${location.pathname}#/nostr/${docType}/${pubToken}/${idToken}`;
+  return `${location.origin}/nostr/${docType}/${pubToken}/${idToken}`;
 }
 
 export function decodeNostrUrlSegments(

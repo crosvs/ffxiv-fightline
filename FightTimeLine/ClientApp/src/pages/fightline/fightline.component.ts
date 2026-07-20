@@ -61,6 +61,8 @@ import {
   FightHubService,
   IStartSessionHandlers,
   IConnectToSessionHandlers,
+  INostrService,
+  nostrServiceToken,
 } from "src/services";
 import { getTimeGoodAbilityToUse } from "src/core/Defensives/functions";
 import { ChangeBossAttackCommand } from "src/core/commands/ChangeBossAttackCommand";
@@ -109,7 +111,8 @@ export class FightLineComponent implements OnInit, OnDestroy {
     private dialogService: DialogService,
     private settingsService: SettingsService,
     private storage: LocalStorageService,
-    public fightHubService: FightHubService
+    public fightHubService: FightHubService,
+    @Inject(nostrServiceToken) private nostrService: INostrService
   ) {
     this.presenterManager = visStorage.presenter;
 
@@ -673,6 +676,21 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
   private onStart(r: ActivatedRouteSnapshot): void {
     this.fflogsCode = null;
+    const nostrDocType = r.params.docType;
+    if (nostrDocType) {
+      const decoded = this.nostrService.decodeUrlSegments(r.params.pubToken, r.params.idToken);
+      if (!decoded) {
+        this.notification.error("This share link is not valid.");
+        return;
+      }
+      if (nostrDocType === "boss") {
+        this.loadBossFromNostr(decoded.pubkey, decoded.id);
+      } else {
+        this.loadFightFromNostr(decoded.pubkey, decoded.id, r.queryParamMap.get("preset"));
+      }
+      return;
+    }
+
     const id = r.params.fightId;
     if (id) {
       if (id.indexOf("dummy") === 0) {
@@ -699,6 +717,104 @@ export class FightLineComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  /**
+   * Loads a fight published to Nostr — the serverless share-link path. Deliberately skips
+   * getCommands()/connectToSession(): a Nostr-loaded fight shows its latest published snapshot
+   * only, matching XIVPlan's model (no cross-session command-replay history, no live-collab
+   * session for a document with no server-tracked id) — in-session undo/redo still works since
+   * that's already local to fightLineController/UndoRedoController.
+   */
+  private loadFightFromNostr(pubkey: string, id: string, preset?: string): void {
+    this.dialogService.executeWithLoading("Loading...", (ref) => {
+      this.presenterManager.reset();
+      this.fightId = id;
+      this.nostrService.fetchFight(pubkey, id).subscribe({
+        next: (result) => {
+          const loadedData = JSON.parse(result.content) as SerializeController.IFightSerializeData;
+          const fight: M.IFight = {
+            id,
+            name: result.name,
+            userName: pubkey.slice(0, 8),
+            data: result.content,
+            isDraft: false,
+            dateModified: new Date(),
+            game: this.gameService.name,
+          };
+
+          this.recent.register({
+            id: fight.id,
+            name: fight.name,
+            source: ActivitySource.Timeline,
+            url: this.nostrService.getShareUrl("fight", pubkey, id),
+          });
+
+          const settings = this.settingsService.load();
+          this.presenterManager.setSettings(settings);
+          if (loadedData.filter) this.presenterManager.filter = loadedData.filter;
+          if (loadedData.view) this.presenterManager.view = loadedData.view;
+
+          this.presenterManager.load(fight.id);
+          this.fightLineController.loadFight(fight, loadedData);
+          this.planArea.setInitialWindow(this.fightLineController.getLatestBossAttackTime(), 2);
+          this.planArea.refresh();
+          if (preset) {
+            this.fightLineController.loadPreset(preset);
+          }
+          ref.close();
+        },
+        error: (error) => {
+          console.log(error);
+          this.notification.error(error?.message ?? "Unable to load this shared fight.");
+          ref.close();
+        },
+      });
+    });
+  }
+
+  /** Boss-variant equivalent of loadFightFromNostr — like the existing loadBoss(), this starts a
+   *  brand-new fight shell and loads the fetched boss data into it as the starting encounter. */
+  private loadBossFromNostr(pubkey: string, id: string): void {
+    this.dialogService.executeWithLoading("Loading...", (ref) => {
+      this.nostrService.fetchBoss(pubkey, id).subscribe({
+        next: (result) => {
+          const bossData = JSON.parse(result.content) as M.IBoss;
+          this.fightService.newFight("").subscribe(
+            (value) => {
+              this.fightId = value.id;
+              this.location.replaceState("/" + value.id);
+              this.startSession()
+                .then(() => {
+                  const settings = this.settingsService.load();
+                  this.presenterManager.setSettings(settings);
+                  this.fightLineController.applyView(settings.main.defaultView);
+                  this.fightLineController.applyFilter(settings.main.defaultFilter);
+                  this.fightLineController.loadBoss(bossData);
+                  this.planArea.setInitialWindow(this.fightLineController.getLatestBossAttackTime(), 2);
+                  this.planArea.refresh();
+                  ref.close();
+                })
+                .catch((error) => {
+                  console.log(error);
+                  this.notification.error("Unable to start");
+                  ref.close();
+                });
+            },
+            (error) => {
+              console.log(error);
+              this.notification.error("Unable to start fight");
+              ref.close();
+            }
+          );
+        },
+        error: (error) => {
+          console.log(error);
+          this.notification.error(error?.message ?? "Unable to load this shared boss.");
+          ref.close();
+        },
+      });
+    });
   }
 
   loadBoss(bossId: string) {

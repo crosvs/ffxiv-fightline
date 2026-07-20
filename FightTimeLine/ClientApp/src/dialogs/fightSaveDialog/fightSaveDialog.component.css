@@ -1,0 +1,17 @@
+.nostr-publish-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.nostr-publish-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.nostr-share-url input {
+  font-family: monospace;
+  font-size: 12px;
+}
