@@ -871,6 +871,32 @@ export class FightLineComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Publishes a boss template to the current pubkey's personal Nostr vault — replaces the old
+   * server-backed public boss catalog for saving (per the migration plan, that public catalog is
+   * retired going forward; a saved boss variant is now share-by-link/private-to-your-key, the same
+   * model as a saved fight, not a publicly searchable record). `bossData.id`, if already set, is
+   * reused as the Nostr document id so a re-save overwrites rather than duplicates.
+   */
+  private publishBossToNostr(bossData: M.IBoss, isPrivate: boolean, close: () => void): void {
+    this.nostrService
+      .publishBoss(bossData.data, bossData.name, isPrivate ? "private" : "public", bossData.id || undefined)
+      .subscribe({
+        next: (source) => {
+          bossData.id = source.id;
+          bossData.userName = source.pubkey.slice(0, 8);
+          bossData.isPrivate = isPrivate;
+          this.fightLineController.updateBoss(bossData);
+          this.notification.success("Boss saved to your Nostr vault");
+          close();
+        },
+        error: (err) => {
+          console.error(err);
+          this.notification.error(err?.message ?? "Boss save failed");
+        },
+      });
+  }
+
   onCommand(data: ICommandData) {
     console.log("adding command in fightline.onCommand");
     this.fightService
@@ -1102,42 +1128,16 @@ export class FightLineComponent implements OnInit, OnDestroy {
         .serializeBoss();
 
       if (bossData.id) {
-        this.fightService.saveBoss(bossData).subscribe({
-          next: (e) => {
-            this.notification.success("Boss saved");
-            this.fightLineController.updateBoss(e);
-            value.close();
-          },
-          error: (err) => {
-            console.error(err);
-            this.notification.error("Boss save failed");
-          },
-        });
+        this.publishBossToNostr(bossData, value.isPrivate, value.close);
       } else {
         this.dialogService
           .openSaveBoss(value.name + " new template")
           .then((data) => {
             if (data) {
               bossData.name = data;
-              bossData.userName =
-                (bossData && bossData.userName) ||
-                this.authenticationService.username;
               bossData.ref = (bossData && bossData.ref) || value.reference;
-              bossData.isPrivate =
-                (bossData && bossData.isPrivate) || value.isPrivate;
               bossData.game = this.gameService.name;
-
-              this.fightService.saveBoss(bossData).subscribe({
-                next: (e) => {
-                  this.notification.success("Boss saved");
-                  this.fightLineController.updateBoss(e);
-                  value.close();
-                },
-                error: (err) => {
-                  console.log(err);
-                  this.notification.error("Boss save failed");
-                },
-              });
+              this.publishBossToNostr(bossData, value.isPrivate, value.close);
             } else {
               value.close();
             }
@@ -1163,25 +1163,9 @@ export class FightLineComponent implements OnInit, OnDestroy {
           if (data) {
             bossData.id = null;
             bossData.name = data;
-            bossData.userName =
-              (bossData && bossData.userName) ||
-              this.authenticationService.username;
             bossData.ref = (bossData && bossData.ref) || value.reference;
-            bossData.isPrivate =
-              (bossData && bossData.isPrivate) || value.isPrivate;
             bossData.game = this.gameService.name;
-
-            this.fightService.saveBoss(bossData).subscribe({
-              next: (e) => {
-                this.notification.success("Boss saved");
-                this.fightLineController.updateBoss(e);
-                value.close();
-              },
-              error: (err) => {
-                console.log(err);
-                this.notification.error("Boss save failed");
-              },
-            });
+            this.publishBossToNostr(bossData, value.isPrivate, value.close);
           } else {
             value.close();
           }

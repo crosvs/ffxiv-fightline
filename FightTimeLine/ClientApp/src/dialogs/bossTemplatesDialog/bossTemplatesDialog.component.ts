@@ -38,6 +38,7 @@ import {
   VisTimelineService,
 } from "ngx-vis";
 import { IBossAbilityUsageData } from "src/core/SerializeController";
+import { CURATED_BOSSES, CuratedBossEntry } from "../../assets/boss-catalog";
 import moment from "moment";
 
 @Component({
@@ -228,8 +229,20 @@ export class BossTemplatesDialogComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Curated entries for the currently-selected encounter, keyed by id for select()'s lookup. */
+  private curatedById = new Map<string, CuratedBossEntry>();
+
+  private curatedEntriesFor(enc: Encounter): IBossSearchEntry[] {
+    const matches = CURATED_BOSSES.filter(
+      (b) => b.ref === enc.id && b.game === this.gameService.name
+    );
+    this.curatedById = new Map(matches.map((b) => [b.id, b]));
+    return matches.map((b) => ({ id: b.id, name: b.name, canRemove: false }));
+  }
+
   loadBosses(enc: Encounter, skipCheck?: boolean) {
     this.isListLoading = true;
+    const curated = this.curatedEntriesFor(enc);
     this.fightService
       .getBosses(enc.id, this.data?.boss?.name || "", false)
       .subscribe({
@@ -240,7 +253,7 @@ export class BossTemplatesDialogComponent implements OnInit, OnDestroy {
               skipCheck
             );
           }
-          this.templates = data.filter(
+          this.templates = [...curated, ...data].filter(
             (x) =>
               !this.data.boss ||
               x.id.toLowerCase() === this.data.boss.id.toLowerCase()
@@ -283,28 +296,38 @@ export class BossTemplatesDialogComponent implements OnInit, OnDestroy {
 
     this.isTimelineLoading = true;
     this.selectedTemplate = item;
-    this.fightService.getBoss(this.selectedTemplate.id).subscribe({
-      next: (boss) => {
-        const data = JSON.parse(boss.data) as {
-          attacks: IBossAbilityUsageData[];
-          downTimes: any[];
-        };
-        this.visItems.clear();
-        this.visItems.add(
-          data.attacks.map((a) => this.createBossAttack(a.id, a.ability, false))
-        );
-        this.visItems.add(
-          data.downTimes.map((a) =>
-            this.createDownTime(
-              a.id,
-              Utils.getDateFromOffset(a.start),
-              Utils.getDateFromOffset(a.end),
-              a.color
-            )
+
+    const renderData = (rawData: string) => {
+      const data = JSON.parse(rawData) as {
+        attacks: IBossAbilityUsageData[];
+        downTimes: any[];
+      };
+      this.visItems.clear();
+      this.visItems.add(
+        data.attacks.map((a) => this.createBossAttack(a.id, a.ability, false))
+      );
+      this.visItems.add(
+        data.downTimes.map((a) =>
+          this.createDownTime(
+            a.id,
+            Utils.getDateFromOffset(a.start),
+            Utils.getDateFromOffset(a.end),
+            a.color
           )
-        );
-        this.visTimelineService.fit(this.visTimelineBoss);
-      },
+        )
+      );
+      this.visTimelineService.fit(this.visTimelineBoss);
+      this.isTimelineLoading = false;
+    };
+
+    const curated = this.curatedById.get(this.selectedTemplate.id);
+    if (curated) {
+      renderData(curated.data);
+      return;
+    }
+
+    this.fightService.getBoss(this.selectedTemplate.id).subscribe({
+      next: (boss) => renderData(boss.data),
       complete: () => {
         this.isTimelineLoading = false;
       },
@@ -374,6 +397,24 @@ export class BossTemplatesDialogComponent implements OnInit, OnDestroy {
   }
 
   load() {
+    const curated = this.curatedById.get(this.selectedTemplate.id);
+    if (curated) {
+      this.dispatcher.dispatch("bossTemplatesLoad", {
+        boss: {
+          id: curated.id,
+          name: curated.name,
+          userName: "",
+          data: curated.data,
+          isPrivate: false,
+          ref: curated.ref,
+          game: curated.game,
+        } as IBoss,
+        encounter: this.selectedEncounter.id,
+        close: () => this.dialogRef.destroy(),
+      });
+      return;
+    }
+
     this.fightService.getBoss(this.selectedTemplate.id).subscribe((data) => {
       this.dispatcher.dispatch("bossTemplatesLoad", {
         boss: data,
