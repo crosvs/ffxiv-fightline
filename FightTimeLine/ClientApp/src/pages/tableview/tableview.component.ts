@@ -112,8 +112,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
 
   public constructor(
     @Inject(S.fightServiceToken) private fightService: S.IFightService,
-    @Inject(S.authenticationServiceToken)
-    public authenticationService: S.IAuthenticationService,
     @Inject(gameServiceToken) private gameService: IGameService,
     private visStorage: VisStorageService,
     private notification: S.ScreenNotificationsService,
@@ -557,10 +555,7 @@ export class TableViewComponent implements OnInit, OnDestroy {
     };
 
     const settings = this.settingsService.load();
-    const name =
-      settings.teamwork.displayName ||
-      this.authenticationService.username ||
-      "Anonymous";
+    const name = settings.teamwork.displayName || "Anonymous";
     try {
       await this.fightHubService.connect(this.fightId, name, handlers);
       this.notification.showConnectedToSession();

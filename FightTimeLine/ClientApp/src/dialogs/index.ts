@@ -5,8 +5,6 @@ import { FightLoadDialogComponent } from "./fightLoadDialog/fightLoadDialog.comp
 import { FightSaveDialogComponent } from "./fightSaveDialog/fightSaveDialog.component"
 import { HelpDialogComponent } from "./helpDialog/helpDialog.component"
 import { LoadingDialogComponent } from "./loadingDialog/loadingDialog.component"
-import { LoginDialogComponent } from "./loginDialog/loginDialog.component"
-import { RegisterDialogComponent } from "./registerDialog/registerDialog.component"
 import { SettingsDialogComponent } from "./settingsDialog/settingsDialog.component"
 import { TableViewDialogComponent } from "./tableViewDialog/tableViewDialog.component"
 import { WhatsNewDialogComponent } from "./whatsNewDialog/whatsNewDialog.component"
@@ -21,8 +19,6 @@ export {
   FightSaveDialogComponent as FightSaveDialog,
   HelpDialogComponent as HelpDialog,
   LoadingDialogComponent as LoadingDialog,
-  LoginDialogComponent as LoginDialog,
-  RegisterDialogComponent as RegisterDialog,
   CharacterDialogComponent,
   SettingsDialogComponent as SettingsDialog,
   TableViewDialogComponent as TableViewDialog,
@@ -40,9 +36,7 @@ export const DialogsModuleComponents =
     SettingsDialogComponent,
     FFLogsImportDialogComponent,
     LoadingDialogComponent,
-    LoginDialogComponent,
     CharacterDialogComponent,
-    RegisterDialogComponent,
     TableViewDialogComponent,
     BossTemplatesDialogComponent,
     WhatsNewDialogComponent

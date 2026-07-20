@@ -2,7 +2,10 @@ import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, Inject, Afte
 import { Router } from "@angular/router";
 import { DialogService } from "../../services/index";
 import { ScreenNotificationsService } from "../../services/ScreenNotificationsService";
-import { IAuthenticationService, authenticationServiceToken, ChangeNotesService } from "../../services/index";
+import { ChangeNotesService } from "../../services/index";
+import { INostrService } from "../../services/nostr/nostr.service-interface";
+import { nostrServiceToken } from "../../services/nostr/nostr.service-provider";
+import { pubkeyToNpub, subscribePubkey, getCachedPubkey, refreshNostrPubkey } from "../../services/nostr/nostr-engine";
 import * as Gameserviceprovider from "../../services/game.service-provider";
 import * as Gameserviceinterface from "../../services/game.service-interface";
 import * as _ from "lodash";
@@ -14,7 +17,7 @@ import { TranslateService } from "@ngx-translate/core";
   templateUrl: "./toolbar.component.html",
   styleUrls: ["./toolbar.component.css"],
 })
-export class ToolbarComponent {
+export class ToolbarComponent implements OnInit, OnDestroy {
 
   @Input() showHome: boolean;
   @Input() showRefresh: boolean;
@@ -22,10 +25,11 @@ export class ToolbarComponent {
   @Output() langChanged: EventEmitter<void> = new EventEmitter<void>();
 
   container = { data: [] };
+  private unsubscribePubkey: () => void;
 
   public constructor(
     private dialogService: DialogService,
-    @Inject(authenticationServiceToken) public authenticationService: IAuthenticationService,
+    @Inject(nostrServiceToken) private nostrService: INostrService,
     @Inject(Gameserviceprovider.gameServiceToken) public gameService: Gameserviceinterface.IGameService,
     private notification: ScreenNotificationsService,
     private changeNotesService: ChangeNotesService,
@@ -34,6 +38,22 @@ export class ToolbarComponent {
     private translate: TranslateService
   ) {
 
+  }
+
+  ngOnInit(): void {
+    this.unsubscribePubkey = subscribePubkey(() => {});
+    void refreshNostrPubkey();
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribePubkey?.();
+  }
+
+  get displayIdentity(): string {
+    const pubkey = getCachedPubkey();
+    if (!pubkey) return "…";
+    const npub = pubkeyToNpub(pubkey);
+    return npub.slice(0, 12) + "…" + npub.slice(-6);
   }
 
   get currentLang() {
@@ -97,39 +117,52 @@ export class ToolbarComponent {
     return this.dialogService.openHelp();
   }
 
-  login() {
-    this.dialogService.openLogin();
-  }
-
-  register() {
-    this.dialogService.openRegister()
-      .then(result => {
-        if (result) {
-          this.authenticationService
-            .login(result.username, result.password)
-            .subscribe((): void => {
-            });
-        }
-      });
-  }
-
   changeTheme() {
     (window as any).changeTheme(this.darkTheme ? "default" : "dark");
   }
 
-
-  logout() {
-    this.authenticationService.logout();
-  }
   get darkTheme() {
     return localStorage.getItem("theme") === "dark";
   }
 
   onLoad(): void {
-    if (!this.authenticationService.authenticated) {
-      this.notification.showSignInRequired(() => { this.login(); });
-    } else {
-      this.dialogService.openLoad();
+    this.dialogService.openLoad();
+  }
+
+  /** Downloads the current Nostr secret key as a .txt file — the only backup a user has, since
+   *  nothing is stored server-side. */
+  exportKey(): void {
+    this.nostrService.exportSecretKeyBlob().subscribe((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fightline-nostr-key.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  /** Triggered by a hidden file input in the template — reads the selected .txt key file and
+   *  imports it, replacing the currently active identity. */
+  onImportKeyFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    file.text().then((text) => {
+      this.nostrService.importSecretKey(text).subscribe({
+        next: () => this.notification.success("Nostr key imported."),
+        error: (err) => this.notification.error(err?.message ?? "Invalid key file."),
+      });
+    });
+    input.value = "";
+  }
+
+  generateNewKey(): void {
+    if (!confirm("This replaces your current Nostr identity with a brand-new one. Export your current key first if you want to keep access to anything published under it. Continue?")) {
+      return;
     }
+    this.nostrService.generateNewKey().subscribe(() => {
+      this.notification.success("Generated a new Nostr key.");
+    });
   }
 }

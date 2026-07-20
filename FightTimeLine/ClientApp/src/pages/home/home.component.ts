@@ -19,7 +19,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   public fflogsExtraPath: string;
 
   public constructor(
-    @Inject(S.authenticationServiceToken) public authenticationService: S.IAuthenticationService,
     @Inject("DispatcherPayloads") private dispatcher: S.DispatcherService<DispatcherPayloads>,
     @Inject(Gameserviceprovider.gameServiceToken) public gameService: Gameserviceinterface.IGameService,
     private notification: S.ScreenNotificationsService,
@@ -86,11 +85,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
 
   load(): void {
-    if (!this.authenticationService.authenticated) {
-      this.notification.showSignInRequired(null);
-      return;
-    }
-
     this.dialogService.openLoad();
   }
 

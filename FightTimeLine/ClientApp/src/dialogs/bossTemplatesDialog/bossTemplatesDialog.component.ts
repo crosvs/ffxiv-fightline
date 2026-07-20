@@ -24,8 +24,6 @@ import {
 } from "../../services/dispatcher.service";
 import { fightServiceToken } from "../../services/fight/fight.service-provider";
 import { IFightService } from "../../services/fight/fight.service-interface";
-import { IAuthenticationService } from "../../services/authentication/authentication.service-interface";
-import { authenticationServiceToken } from "../../services/authentication/authentication.service-provider";
 import { gameServiceToken } from "../../services/game.service-provider";
 import { IGameService } from "../../services/game.service-interface";
 import { NZ_MODAL_DATA, NzModalRef } from "ng-zorro-antd/modal";
@@ -103,8 +101,6 @@ export class BossTemplatesDialogComponent implements OnInit, OnDestroy {
     private visTimelineService: VisTimelineService,
     @Inject("DispatcherPayloads")
     private dispatcher: DispatcherService<DispatcherPayloads>,
-    @Inject(authenticationServiceToken)
-    public authService: IAuthenticationService,
     private notification: ScreenNotificationsService
   ) {}
 

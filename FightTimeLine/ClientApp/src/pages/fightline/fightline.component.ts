@@ -52,8 +52,6 @@ import {
 import {
   fightServiceToken,
   IFightService,
-  authenticationServiceToken,
-  IAuthenticationService,
   ScreenNotificationsService,
   DialogService,
   SettingsService,
@@ -99,8 +97,6 @@ export class FightLineComponent implements OnInit, OnDestroy {
     @Inject(fightServiceToken) private fightService: IFightService,
     @Inject(Gameserviceprovider.gameServiceToken)
     public gameService: GameServiceInterface.IGameService,
-    @Inject(authenticationServiceToken)
-    public authenticationService: IAuthenticationService,
     @Inject("DispatcherPayloads")
     private dispatcher: DispatcherService<DispatcherPayloads>,
     private notification: ScreenNotificationsService,
@@ -366,11 +362,6 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   load(): void {
-    if (!this.authenticationService.authenticated) {
-      this.notification.showSignInRequired(() => {});
-      return;
-    }
-
     this.dialogService.openLoad();
   }
 
@@ -956,10 +947,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
       };
 
       const settings = this.settingsService.load();
-      const name =
-        settings.teamwork.displayName ||
-        this.authenticationService.username ||
-        "Anonymous";
+      const name = settings.teamwork.displayName || "Anonymous";
 
       this.fightHubService
         .startSession(this.fightId, name, handlers)
@@ -1017,10 +1005,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
     };
 
     const settings = this.settingsService.load();
-    const name =
-      settings.teamwork.displayName ||
-      this.authenticationService.username ||
-      "Anonymous";
+    const name = settings.teamwork.displayName || "Anonymous";
     return this.fightHubService
       .connect(this.fightId, name, handlers)
       .then(() => {

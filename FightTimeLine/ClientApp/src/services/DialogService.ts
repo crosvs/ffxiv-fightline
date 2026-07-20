@@ -23,44 +23,6 @@ export class DialogService {
 
   dialog: any;
 
-  openLogin() {
-    const dialogRef = this.dialogs.create({
-      nzWrapClassName: "vertical-center-modal",
-      nzContent: D.LoginDialog,
-      nzTitle: "Login",
-      nzWidth: 265,
-      nzClosable: false,
-      nzKeyboard: false,
-      nzOkDisabled: true,
-      nzCancelDisabled: true,
-      nzFooter: null,
-      nzMaskClosable: false,
-    });
-    dialogRef.afterClose.subscribe((result) => {
-      if (result && result.signup) {
-        setTimeout(() => {
-          this.openRegister();
-        });
-        return;
-      }
-    });
-  }
-
-  openRegister(): Promise<any> {
-    const dialogRef = this.dialogs.create({
-      nzWrapClassName: "vertical-center-modal",
-      nzTitle: "Register",
-      nzContent: D.RegisterDialog,
-      nzWidth: 355,
-      nzClosable: false,
-      nzKeyboard: false,
-      nzOkDisabled: true,
-      nzCancelDisabled: true,
-      nzMaskClosable: false,
-    });
-    return this.toPromise(dialogRef.afterClose);
-  }
-
   openBossAttackAddDialog(
     bossAbility: IBossAbility,
     presenter: PresenterManager,

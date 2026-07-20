@@ -47,27 +47,20 @@
       </nz-dropdown-menu>
     </span>
     <span>
-      <button nz-dropdown nz-button aria-label="Account" [nzDropdownMenu]="accountMenu" nz-tooltip
-        [nzTooltipTrigger]="'click'" nzShape="circle" nzTooltipTitle="{{'component.toolbar.account' | translate}}"
-        [nzDanger]="!authenticationService.authenticated">
-        <i nz-icon nzType="user" aria-label="Account"></i>
+      <button nz-dropdown nz-button aria-label="Nostr identity" [nzDropdownMenu]="accountMenu" nz-tooltip
+        [nzTooltipTrigger]="'click'" nzShape="circle" nzTooltipTitle="Your Nostr identity">
+        <i nz-icon nzType="user" aria-label="Nostr identity"></i>
       </button>
       <nz-dropdown-menu #accountMenu="nzDropdownMenu">
         <ul nz-menu class="noselect">
-          <li nz-menu-item (click)="login()" *ngIf="!authenticationService.authenticated">
-            {{'component.toolbar.signIn' | translate}}
-          </li>
-          <li nz-menu-item (click)="register()" *ngIf="!authenticationService.authenticated">
-            {{'component.toolbar.signUp' | translate}}
-          </li>
-          <li nz-menu-item *ngIf="authenticationService.authenticated">
-            {{'component.toolbar.loggedAs' | translate}} {{authenticationService.username}}
-          </li>
-          <li nz-menu-item (click)="logout()" *ngIf="authenticationService.authenticated">
-            {{'component.toolbar.signOut' | translate}}
-          </li>
+          <li nz-menu-item disabled>{{ displayIdentity }}</li>
+          <li nz-menu-item (click)="exportKey()">Export key</li>
+          <li nz-menu-item (click)="importKeyInput.click()">Import key</li>
+          <li nz-menu-item (click)="generateNewKey()">Generate new key</li>
         </ul>
       </nz-dropdown-menu>
+      <input #importKeyInput type="file" accept=".txt" style="display: none"
+        (change)="onImportKeyFileSelected($event)" />
     </span>
     <span>
       <button nz-dropdown nz-button [nzDropdownMenu]="helpMenu" aria-label="Help" [nzTrigger]="'click'" nzType="dashed"

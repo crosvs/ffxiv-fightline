@@ -1,7 +1,6 @@
 import { BrowserModule } from "@angular/platform-browser";
 import { NgModule, ErrorHandler, Injectable, LOCALE_ID } from "@angular/core";
 import {
-  HTTP_INTERCEPTORS,
   HttpClient,
   provideHttpClient,
   withInterceptorsFromDi,
@@ -27,10 +26,8 @@ import { ToolbarComponent } from "../components/toolbar/toolbar.component";
 import { SyncSettingsComponent } from "../dialogs/bossAttackDialog/syncSettings/syncSettings.component";
 import { SyncDowntimeComponent } from "../dialogs/bossAttackDialog/syncDowntime/syncDowntime.component";
 import * as Services from "../services/index";
-import { JwtInterceptor } from "../interceptors/jwtInterceptor";
 import { ClipboardModule } from "ngx-clipboard";
 import { NgProgressbar } from "ngx-progressbar";
-import { NgxCaptchaModule } from "ngx-captcha";
 import { DialogsModuleComponents } from "../dialogs/index";
 import { SingleAbilityComponent } from "../components/singleAbility/singleAbility.component";
 import { WarningsComponent } from "../components/warnings/warnings.component";
@@ -275,7 +272,6 @@ export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
     DragDropModule,
     FormsModule,
     NgProgressbar,
-    NgxCaptchaModule,
     PortalModule,
     ReactiveFormsModule,
     VisModule,
@@ -290,7 +286,6 @@ export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
     ...zorroModules,
   ],
   providers: [
-    { provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
     { provide: "BASE_URL", useFactory: getBaseUrl },
     { provide: "FFLogs_URL", useValue: "https://www.fflogs.com:443/" },
     { provide: "FFLogs_API_KEY", useValue: "66bfc666827c9b668f4daa87d019e714" },

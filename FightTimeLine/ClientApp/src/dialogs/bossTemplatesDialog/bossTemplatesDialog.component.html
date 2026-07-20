@@ -238,7 +238,6 @@
       nzType="primary"
       nz-button
       *ngIf="data && data.needSave && data.boss"
-      [nzDanger]="!authService.authenticated"
       (click)="saveAsNew()"
     >
       {{ "dialog.saveAsNew" | translate }}
@@ -246,14 +245,7 @@
     <button
       nz-button
       nzType="primary"
-      *ngIf="
-        data &&
-        data.needSave &&
-        selectedEncounter &&
-        ((data.boss && data.boss.userName === authService.username) ||
-          !data.boss)
-      "
-      [nzDanger]="!authService.authenticated"
+      *ngIf="data && data.needSave && selectedEncounter"
       (click)="save()"
     >
       {{ "dialog.save" | translate }}
