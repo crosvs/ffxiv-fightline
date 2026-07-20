@@ -1,112 +1,147 @@
-import { Injectable, Inject } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Inject, Injectable } from "@angular/core";
+import localforage from "localforage";
+import { from, Observable } from "rxjs";
 import { IBoss, IFight, IBossSearchEntry, ICommandEntry } from "../../core/Models";
 import { IFightService } from "./fight.service-interface";
 import * as Gameserviceprovider from "../game.service-provider";
 import * as Gameserviceinterface from "../game.service-interface";
 
+interface StoredCommand {
+  id: number;
+  userName: string;
+  fight: string;
+  data: string;
+  timeStamp: number;
+}
+
+const fightsStore = localforage.createInstance({ name: "FightLine", storeName: "fights" });
+const bossesStore = localforage.createInstance({ name: "FightLine", storeName: "bosses" });
+const commandsStore = localforage.createInstance({ name: "FightLine", storeName: "commands" });
+
+function randomId(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Local-first draft storage for fights and boss templates — replaces the old server-backed
+ * FightsService (HTTP against the now-deleted ASP.NET Core backend). "New fight", FFLogs import,
+ * and the "Load" dialog all operate on drafts stored in IndexedDB (via localforage), never
+ * touching the network — the same role the old server played for unpublished work-in-progress,
+ * just local instead of server-side. Publishing a fight/boss to Nostr (see services/nostr/) is
+ * the separate, explicit action that actually makes something shareable; this service never
+ * publishes anything on its own.
+ *
+ * Command-log replay (addCommand/getCommands) is kept for the same reason it existed
+ * server-side: reopening a draft later reconstructs it from its full edit history, not just a
+ * last-saved snapshot. This has nothing to do with the removed SignalR live-collab — it's local
+ * persistence of one browser's own edit history.
+ */
 @Injectable()
 export class FightsService implements IFightService {
   constructor(
-    @Inject(Gameserviceprovider.gameServiceToken) private gameService: Gameserviceinterface.IGameService,
-    private httpClient: HttpClient,
-    @Inject("BASE_URL") private basePath: string) { }
+    @Inject(Gameserviceprovider.gameServiceToken) private gameService: Gameserviceinterface.IGameService
+  ) {}
 
-  headers = {
-    fightService: "true"
-  };
-
-  getBosses(reference: number, searchString: string, privateOnly: boolean): Observable<IBossSearchEntry[]> {
-    return this.httpClient.get<IBossSearchEntry[]>(this.basePath + `api/data/bosses/${reference}/${this.gameService.name}/${searchString}?privateOnly=${privateOnly}`,
-      {
-        headers: this.headers
-      });
+  getBosses(reference: number, searchString: string, _privateOnly: boolean): Observable<IBossSearchEntry[]> {
+    return from(
+      bossesStore.keys().then(async (keys) => {
+        const bosses = await Promise.all(keys.map((k) => bossesStore.getItem<IBoss>(k)));
+        const search = (searchString || "").toLowerCase();
+        return bosses
+          .filter((b): b is IBoss => !!b && b.ref === reference)
+          .filter((b) => !search || b.name.toLowerCase().includes(search))
+          .map((b) => ({ id: b.id, name: b.name, canRemove: true } as IBossSearchEntry));
+      })
+    );
   }
 
   getBoss(id: string): Observable<IBoss> {
-    return this.httpClient.get<IBoss>(this.basePath + `api/data/boss/${id}`,
-      {
-        headers: this.headers
-      });
+    return from(bossesStore.getItem<IBoss>(id));
   }
 
   removeBosses(ids: string[]): Observable<any> {
-    return this.httpClient.post<any[]>(this.basePath + "api/data/removeBosses",
-      ids,
-      {
-        headers: this.headers
-      });
+    return from(Promise.all(ids.map((id) => bossesStore.removeItem(id))));
   }
 
   saveBoss(boss: IBoss): Observable<IBoss> {
-    return this.httpClient.post<IBoss>(this.basePath + "api/data/saveBoss", boss,
-      {
-        headers: this.headers
-      });
+    const toSave: IBoss = { ...boss, id: boss.id || randomId() };
+    return from(bossesStore.setItem(toSave.id, toSave).then(() => toSave));
   }
 
   getFight(id: string): Observable<IFight> {
-    return this.httpClient.get<IFight>(this.basePath + `api/data/fight/${id}`,
-      {
-        headers: this.headers
-      });
+    return from(fightsStore.getItem<IFight>(id));
   }
 
   saveFight(fight: IFight): Observable<IFight> {
-    return this.httpClient.post<IFight>(this.basePath + "api/data/saveFight", fight,
-      {
-        headers: this.headers
-      });
+    const now = new Date();
+    const toSave: IFight = {
+      ...fight,
+      id: fight.id || randomId(),
+      isDraft: false,
+      dateModified: now,
+      dateCreated: fight.dateCreated || now,
+    };
+    return from(fightsStore.setItem(toSave.id, toSave).then(() => toSave));
   }
 
   getFightsForUser(): Observable<IFight[]> {
-    return this.httpClient.get<IFight[]>(this.basePath + `api/data/fights/${this.gameService.name}`,
-      {
-        headers: this.headers
-      });
+    return from(
+      fightsStore.keys().then(async (keys) => {
+        const fights = await Promise.all(keys.map((k) => fightsStore.getItem<IFight>(k)));
+        return fights
+          .filter((f): f is IFight => !!f)
+          .sort((a, b) => new Date(b.dateModified).getTime() - new Date(a.dateModified).getTime());
+      })
+    );
   }
 
-  removeFights(map: any[]): Observable<any> {
-    return this.httpClient.post<any[]>(this.basePath + "api/data/removeFights",
-      map,
-      {
-        headers: this.headers
-      });
+  removeFights(ids: string[]): Observable<any> {
+    return from(Promise.all(ids.map((id) => fightsStore.removeItem(id).then(() => commandsStore.removeItem(id)))));
   }
 
   newFight(fraction: string = ""): Observable<IFight> {
-    const fractionPart = fraction ? ":" + fraction : "";
-    return this.httpClient.post<IFight>(this.basePath + `api/data/newFight/${this.gameService.name}${fractionPart}`,
-      null,
-      {
-        headers: this.headers
-      });
+    const now = new Date();
+    const fight: IFight = {
+      id: randomId(),
+      name: "new",
+      userName: "",
+      data: "",
+      isDraft: true,
+      dateCreated: now,
+      dateModified: now,
+      game: fraction ? `${this.gameService.name}:${fraction}` : this.gameService.name,
+    };
+    return from(fightsStore.setItem(fight.id, fight).then(() => fight));
   }
 
-  addCommand(fight: string, data: any): Observable<{id: string}> {
-    // console.log("adding commmand in fightservice.addcommand");
-    return this.httpClient.post<any>(this.basePath + "api/data/addCommand",
-      {
-        fight,
-        data
-      },
-      {
-        headers: this.headers
-      });
+  addCommand(fight: string, data: any): Observable<{ id: number }> {
+    const entry: StoredCommand = {
+      id: Date.now(),
+      userName: "",
+      fight,
+      data: typeof data === "string" ? data : JSON.stringify(data),
+      timeStamp: Date.now(),
+    };
+    return from(
+      commandsStore
+        .getItem<StoredCommand[]>(fight)
+        .then((existing) => commandsStore.setItem(fight, [...(existing ?? []), entry]))
+        .then(() => ({ id: entry.id }))
+    );
   }
 
   getCommands(fight: string, timestamp: number): Observable<ICommandEntry[]> {
-    return this.httpClient.get<ICommandEntry[]>(this.basePath + `api/data/loadCommands/${fight}/${timestamp}`,
-      {
-        headers: this.headers
-      });
+    return from(
+      commandsStore.getItem<StoredCommand[]>(fight).then((entries) =>
+        (entries ?? [])
+          .filter((c) => !timestamp || c.timeStamp > timestamp)
+          .sort((a, b) => a.timeStamp - b.timeStamp)
+          .map((c) => ({ userName: c.userName, fight: c.fight, data: c.data, timeStamp: new Date(c.timeStamp) }))
+      )
+    );
   }
 
-  getCommand(id: number): Observable<string> {
-    return this.httpClient.get<string>(this.basePath + `api/data/getCommand/${id}`,
-      {
-        headers: this.headers
-      });
+  getCommand(_id: number): Observable<any> {
+    return from(Promise.resolve(null));
   }
 }

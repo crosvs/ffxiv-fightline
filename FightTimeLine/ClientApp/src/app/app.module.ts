@@ -201,10 +201,6 @@ export class SentryErrorHandler implements ErrorHandler {
   }
 }
 
-export function getBaseUrl() {
-  return environment.baseUrl;
-}
-
 export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
   return new TranslateHttpLoader(http, "assets/i18n/lang_");
 }
@@ -286,7 +282,6 @@ export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
     ...zorroModules,
   ],
   providers: [
-    { provide: "BASE_URL", useFactory: getBaseUrl },
     { provide: "FFLogs_URL", useValue: "https://www.fflogs.com:443/" },
     { provide: "FFLogs_API_KEY", useValue: "66bfc666827c9b668f4daa87d019e714" },
     { provide: ErrorHandler, useClass: SentryErrorHandler },
