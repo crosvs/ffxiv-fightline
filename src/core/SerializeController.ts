@@ -116,7 +116,10 @@ export class SerializeController {
       userName: this.data.fight && this.data.fight.userName || "",
       game: this.gameName + fractionPart,
       isPrivate: false,
-      data: JSON.stringify(fightData)
+      data: JSON.stringify(fightData),
+      // Carried through so the save dialog can tell this fight was already published to Nostr —
+      // otherwise every re-open of the dialog would look unlinked, even right after publishing.
+      nostr: this.data.fight && this.data.fight.nostr || undefined
     } as IFight;
   }
 
@@ -151,6 +154,7 @@ export class SerializeController {
       userName: this.data.boss && this.data.boss.userName || "",
       isPrivate: this.data.boss && this.data.boss.isPrivate || false,
       ref: this.data.boss && this.data.boss.ref || "",
+      nostr: this.data.boss && this.data.boss.nostr || undefined,
       data: JSON.stringify({
         attacks,
         downTimes: this.holders.bossDownTime.getAll().map((it) => ({

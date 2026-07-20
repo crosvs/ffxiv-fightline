@@ -16,11 +16,14 @@
     </div>
     <div class="nostr-publish-row">
       <button nz-button nzType="primary" [nzLoading]="publishingNostr" (click)="onPublishNostrClick('public')">
-        <i nz-icon nzType="upload"></i> Publish (public)
+        <i nz-icon nzType="upload"></i> {{ publishLabel('public') }} (public)
       </button>
       <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('private')">
-        <i nz-icon nzType="lock"></i> Publish (only me)
+        <i nz-icon nzType="lock"></i> {{ publishLabel('private') }} (only me)
       </button>
+    </div>
+    <div *ngIf="isLinkedToNostr" class="nostr-linked-note">
+      <i nz-icon nzType="link"></i> Already published — publishing again updates the same link.
     </div>
     <div *ngIf="nostrShareUrl" class="nostr-share-url">
       <input nz-input readonly [value]="nostrShareUrl" #nostrUrlInput (click)="nostrUrlInput.select()" />

@@ -97,6 +97,19 @@ export enum AbilityType {
   Enmity = 512,
 }
 
+/**
+ * Records which Nostr document (if any) this local draft was last published as — lets a
+ * re-publish reuse the same pubkey+d-tag (an in-place update, stable share URL) instead of always
+ * minting a new one. Only usable when `pubkey` still matches the currently active signing key;
+ * the publish path re-checks this at publish time rather than trusting it from load time, since
+ * the active key can change mid-session (import/generate a new one).
+ */
+export interface INostrLink {
+  pubkey: string;
+  id: string;
+  visibility: "public" | "private";
+}
+
 export interface IBoss {
   id: string;
   name: string;
@@ -105,6 +118,7 @@ export interface IBoss {
   isPrivate: boolean;
   ref: number;
   game: string;
+  nostr?: INostrLink;
 }
 
 export interface IBossSearchEntry {
@@ -125,6 +139,7 @@ export interface IFight {
   dateCreated?: Date;
   game: string;
   level?: number;
+  nostr?: INostrLink;
 }
 
 export interface ICommandEntry {

@@ -708,6 +708,11 @@ export class FightLineComponent implements OnInit, OnDestroy {
             isDraft: false,
             dateModified: new Date(),
             game: this.gameService.name,
+            // Records where this came from so a later re-publish (from the save dialog) can
+            // update this same Nostr document instead of minting a new one — but only once
+            // re-verified against whatever key is active at publish time, in case it's since
+            // changed, or this is someone else's shared fight rather than your own.
+            nostr: { pubkey, id, visibility: result.visibility },
           };
 
           this.recent.register({
@@ -747,6 +752,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
       this.nostrService.fetchBoss(pubkey, id).subscribe({
         next: (result) => {
           const bossData = JSON.parse(result.content) as M.IBoss;
+          bossData.nostr = { pubkey, id, visibility: result.visibility };
           this.fightService.newFight("").subscribe(
             (value) => {
               this.fightId = value.id;
@@ -838,15 +844,20 @@ export class FightLineComponent implements OnInit, OnDestroy {
    * Publishes a boss template to the current pubkey's personal Nostr vault — replaces the old
    * server-backed public boss catalog for saving (per the migration plan, that public catalog is
    * retired going forward; a saved boss variant is now share-by-link/private-to-your-key, the same
-   * model as a saved fight, not a publicly searchable record). `bossData.id`, if already set, is
-   * reused as the Nostr document id so a re-save overwrites rather than duplicates.
+   * model as a saved fight, not a publicly searchable record). Reuses the existing Nostr document
+   * id (an in-place update, stable share URL) only when `bossData.nostr` was published under
+   * whatever key is active *right now* — re-checked at publish time, not trusted from whenever
+   * this boss was loaded, since the active key can change mid-session and a boss loaded from
+   * someone else's shared link must never be able to overwrite their document.
    */
   private publishBossToNostr(bossData: M.IBoss, isPrivate: boolean, close: () => void): void {
-    this.nostrService
-      .publishBoss(bossData.data, bossData.name, isPrivate ? "private" : "public", bossData.id || undefined)
-      .subscribe({
+    const visibility: "public" | "private" = isPrivate ? "private" : "public";
+    this.nostrService.getPubkey().subscribe((currentPubkey) => {
+      const reuseId = bossData.nostr?.pubkey === currentPubkey ? bossData.nostr.id : undefined;
+      this.nostrService.publishBoss(bossData.data, bossData.name, visibility, reuseId).subscribe({
         next: (source) => {
           bossData.id = source.id;
+          bossData.nostr = { pubkey: source.pubkey, id: source.id, visibility };
           bossData.userName = source.pubkey.slice(0, 8);
           bossData.isPrivate = isPrivate;
           this.fightLineController.updateBoss(bossData);
@@ -858,6 +869,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
           this.notification.error(err?.message ?? "Boss save failed");
         },
       });
+    });
   }
 
   onCommand(data: ICommandData) {
