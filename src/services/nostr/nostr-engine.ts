@@ -645,10 +645,22 @@ export function parseInputPubkey(input: string): string {
 
 export type NostrDocType = 'fight' | 'boss';
 
+/**
+ * The deployed app doesn't necessarily live at the domain root — a GitHub Pages project site
+ * serves it under `/<repo-name>/` via `<base href>`, which `ng build --base-href` stamps into
+ * index.html at build time. Angular's router already resolves its own routes relative to this
+ * automatically; this helper exists only because share-URL construction here builds a plain
+ * string outside the router and would otherwise silently drop that prefix.
+ */
+function baseHref(): string {
+  const href = document.querySelector('base')?.getAttribute('href') ?? '/';
+  return href.endsWith('/') ? href : `${href}/`;
+}
+
 export function getNostrShareUrl(docType: NostrDocType, pubkey: string, id: string): string {
   const pubToken = bytesToBase64Url(hexToBytes(pubkey));
   const idToken = bytesToBase64Url(hexToBytes(id));
-  return `${location.origin}/nostr/${docType}/${pubToken}/${idToken}`;
+  return `${location.origin}${baseHref()}nostr/${docType}/${pubToken}/${idToken}`;
 }
 
 export function decodeNostrUrlSegments(
