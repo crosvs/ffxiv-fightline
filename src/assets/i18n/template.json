@@ -155,6 +155,7 @@
 	"fightline.toolbar.menu.new": "fightline.toolbar.menu.new",
 	"fightline.toolbar.menu.load": "fightline.toolbar.menu.load",
 	"fightline.toolbar.menu.save": "fightline.toolbar.menu.save",
+	"fightline.toolbar.menu.saveAs": "fightline.toolbar.menu.saveAs",
 	"fightline.toolbar.menu.bossTemplates": "fightline.toolbar.menu.bossTemplates",
 	"fightline.toolbar.menu.tableview": "fightline.toolbar.menu.tableview",
 	"fightline.toolbar.menu.openAsTable.defence": "fightline.toolbar.menu.openAsTable.defence",

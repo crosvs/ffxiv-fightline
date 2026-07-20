@@ -155,6 +155,7 @@
 	"fightline.toolbar.menu.new": "Nouveau",
 	"fightline.toolbar.menu.load": "Charge",
 	"fightline.toolbar.menu.save": "sauvegarder",
+	"fightline.toolbar.menu.saveAs": "Enregistrer sous",
 	"fightline.toolbar.menu.bossTemplates": "Modèles de patron",
 	"fightline.toolbar.menu.tableview": "Vue tableau",
 	"fightline.toolbar.menu.openAsTable.defence": "La défense",

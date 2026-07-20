@@ -155,6 +155,7 @@
 	"fightline.toolbar.menu.new": "Neu",
 	"fightline.toolbar.menu.load": "Belastung",
 	"fightline.toolbar.menu.save": "sparen",
+	"fightline.toolbar.menu.saveAs": "Speichern als",
 	"fightline.toolbar.menu.bossTemplates": "Boss-Vorlagen",
 	"fightline.toolbar.menu.tableview": "Tabellenansicht",
 	"fightline.toolbar.menu.openAsTable.defence": "Verteidigung",

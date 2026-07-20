@@ -140,6 +140,11 @@ export interface IFight {
   game: string;
   level?: number;
   nostr?: INostrLink;
+  // Remembered per-fight: whether pressing Save should also (re)publish to Nostr, and (via
+  // nostr.visibility) whether that publish is public or private. Independent of whether `nostr`
+  // is actually set — turning sharing off doesn't clear an established link, it just stops the
+  // next Save from touching it, so re-enabling later reuses the same stable share URL.
+  nostrShareEnabled?: boolean;
 }
 
 export interface ICommandEntry {

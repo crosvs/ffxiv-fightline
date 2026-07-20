@@ -155,6 +155,7 @@
 	"fightline.toolbar.menu.new": "新しい",
 	"fightline.toolbar.menu.load": "負荷",
 	"fightline.toolbar.menu.save": "保存する",
+	"fightline.toolbar.menu.saveAs": "名前を付けて保存",
 	"fightline.toolbar.menu.bossTemplates": "ボステンプレート",
 	"fightline.toolbar.menu.tableview": "テーブルビュー",
 	"fightline.toolbar.menu.openAsTable.defence": "防衛",

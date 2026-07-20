@@ -162,6 +162,7 @@
 	"fightline.toolbar.menu.new": "New",
 	"fightline.toolbar.menu.load": "Load",
 	"fightline.toolbar.menu.save": "Save",
+	"fightline.toolbar.menu.saveAs": "Save As",
 	"fightline.toolbar.menu.bossTemplates": "Boss Templates",
 	"fightline.toolbar.menu.tableview": "Table View",
 	"fightline.toolbar.menu.openAsTable.defence": "Defence",

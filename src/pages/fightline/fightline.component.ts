@@ -37,6 +37,7 @@ import { ICommandData } from "../../core/UndoRedo";
 import * as Gameserviceprovider from "../../services/game.service-provider";
 import * as GameServiceInterface from "../../services/game.service-interface";
 import * as SerializeController from "../../core/SerializeController";
+import { saveFightAndMaybePublish } from "../../services/fight/fightSave.helper";
 import { VisStorageService } from "src/services/VisStorageService";
 import {
   ActivitySource,
@@ -75,6 +76,8 @@ export class FightLineComponent implements OnInit, OnDestroy {
   // counterpart. Drives the tab-close warning below: those cases have nowhere else for edits to
   // go, so closing the tab would silently lose them.
   persistedLocally = false;
+  // Drives the toolbar's one-click save button — see quickSaveFight()/quickSaveLabel below.
+  quickSaveState: "idle" | "saving" | "done" = "idle";
 
   @ViewChild("sidepanel", { static: true })
   sidepanel: SidepanelComponent;
@@ -491,6 +494,9 @@ export class FightLineComponent implements OnInit, OnDestroy {
     this.router.navigateByUrl("/new");
   }
 
+  /** Opens the full Save dialog ("Save As" in the toolbar dropdown) — name field, Nostr
+   *  share toggle, live URL preview. This is the only place that can rename a fight or fork a new
+   *  draft; quickSaveFight() below reuses whatever this dialog last committed. */
   saveFight(): void {
     // No auth gate here anymore: this dialog now also offers publishing to Nostr, which
     // deliberately needs no account at all — the old server-backed "Save"/"Save As New" buttons
@@ -502,31 +508,81 @@ export class FightLineComponent implements OnInit, OnDestroy {
       )
       .then((result) => {
         if (result !== null && result !== undefined) {
-          this.persistedLocally = true;
-          this.recent.register({
-            name: result.name,
-            url: "/" + result.id.toLowerCase(),
-            source: ActivitySource.Timeline,
-            id: result.id.toLowerCase(),
-          });
-          this.fightLineController.updateFight(result);
-          // When this fight is linked to Nostr, the address bar should show the shareable
-          // /nostr/... path (so it's copy-paste ready straight from the URL bar) rather than the
-          // local draft id, which only resolves on this device. The "recent activities" entry
-          // above deliberately still points at the local id — that's for fast re-access from
-          // this browser, not for sharing, and shouldn't pay a relay round-trip just to reopen.
-          this.location.replaceState(
-            result.nostr
-              ? this.nostrService.getRoutePath("fight", result.nostr.pubkey, result.nostr.id)
-              : `/${result.id}`
-          );
-          this.notification.showFightSaved();
+          this.onFightSaved(result);
         }
       })
       .catch((reason) => {
         console.log(reason);
         this.notification.showFightNotSaved();
       });
+  }
+
+  /** One-click save using this fight's remembered name and Nostr-sharing preference — no dialog.
+   *  The toolbar button itself is the status indicator (see quickSaveLabel/quickSaveIcon); this
+   *  and the Save dialog's own Save button both go through the same saveFightAndMaybePublish()
+   *  helper so they can never disagree on what "save" actually does for a given fight. */
+  quickSaveFight(): void {
+    if (this.quickSaveState === "saving") {
+      return;
+    }
+    this.quickSaveState = "saving";
+    const fight = this.fightLineController.createSerializer().serializeFight();
+    this.nostrService.getPubkey().subscribe((pubkey) => {
+      saveFightAndMaybePublish(fight, this.fightService, this.nostrService, pubkey).subscribe({
+        next: (result) => {
+          this.onFightSaved(result);
+          this.quickSaveState = "done";
+          setTimeout(() => (this.quickSaveState = "idle"), 1500);
+        },
+        error: (error) => {
+          console.log(error);
+          this.notification.showFightNotSaved();
+          this.quickSaveState = "idle";
+        },
+      });
+    });
+  }
+
+  private onFightSaved(result: M.IFight): void {
+    this.persistedLocally = true;
+    this.recent.register({
+      name: result.name,
+      url: "/" + result.id.toLowerCase(),
+      source: ActivitySource.Timeline,
+      id: result.id.toLowerCase(),
+    });
+    this.fightLineController.updateFight(result);
+    // When this fight is linked to Nostr, the address bar should show the shareable /nostr/...
+    // path (so it's copy-paste ready straight from the URL bar) rather than the local draft id,
+    // which only resolves on this device. The "recent activities" entry above deliberately still
+    // points at the local id — that's for fast re-access from this browser, not for sharing, and
+    // shouldn't pay a relay round-trip just to reopen.
+    this.location.replaceState(
+      result.nostr && result.nostrShareEnabled
+        ? this.nostrService.getRoutePath("fight", result.nostr.pubkey, result.nostr.id)
+        : `/${result.id}`
+    );
+    this.notification.showFightSaved();
+  }
+
+  get quickSaveLabel(): string {
+    const fight = this.fightLineController.data.fight;
+    const shareEnabled = !!fight?.nostrShareEnabled;
+    const visibility = fight?.nostr?.visibility ?? "public";
+    if (this.quickSaveState === "saving") {
+      return !shareEnabled ? "Saving..." : visibility === "public" ? "Publishing..." : "Uploading...";
+    }
+    if (this.quickSaveState === "done") {
+      return !shareEnabled ? "Saved" : visibility === "public" ? "Published" : "Uploaded";
+    }
+    return !shareEnabled ? "Save Locally" : visibility === "public" ? "Save & Publish" : "Save & Upload";
+  }
+
+  get quickSaveIcon(): string {
+    if (this.quickSaveState === "done") return "check";
+    const fight = this.fightLineController.data.fight;
+    if (!fight?.nostrShareEnabled) return "save";
+    return fight.nostr?.visibility === "private" ? "lock" : "global";
   }
 
   addJob(jobName: string, actorName?: string): void {

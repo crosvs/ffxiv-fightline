@@ -12,31 +12,35 @@
       <i nz-icon nzType="global"></i>
       <strong>Share via Nostr</strong>
       <span class="nostr-publish-subtitle">— a portable link anyone can open, no account needed</span>
-      <nostr-status *ngIf="publishingNostr" [progress$]="nostrStatus.publishProgress$"></nostr-status>
+      <nostr-status *ngIf="saving && shareEnabled" [progress$]="nostrStatus.publishProgress$"></nostr-status>
+      <nz-switch class="nostr-share-switch" [ngModel]="shareEnabled" (ngModelChange)="onShareToggleChange($event)"></nz-switch>
     </div>
-    <div class="nostr-publish-row">
-      <button nz-button nzType="primary" [nzLoading]="publishingNostr" (click)="onPublishNostrClick('public')">
-        <i nz-icon nzType="upload"></i> {{ publishLabel('public') }} (public)
+    <div class="nostr-visibility-row" *ngIf="shareEnabled">
+      <button nz-button nzSize="small" nzShape="round" (click)="onVisibilityToggle()">
+        <i nz-icon [nzType]="visibility === 'public' ? 'unlock' : 'lock'"></i>
+        {{ visibility === 'public' ? 'Public' : 'Private' }}
       </button>
-      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('private')">
-        <i nz-icon nzType="lock"></i> {{ publishLabel('private') }} (only me)
-      </button>
+      <span class="nostr-visibility-hint">
+        {{ visibility === 'public' ? 'Anyone with the link can open it.' : 'Only opens with your Nostr key.' }}
+      </span>
     </div>
-    <div *ngIf="isLinkedToNostr" class="nostr-linked-note">
-      <i nz-icon nzType="link"></i> Already published — publishing again updates the same link.
-    </div>
-    <div *ngIf="nostrShareUrl" class="nostr-share-url">
-      <input nz-input readonly [value]="nostrShareUrl" #nostrUrlInput (click)="nostrUrlInput.select()" />
-      <button nz-button nz-tooltip nzTooltipTitle="Copy" (click)="nostrUrlInput.select(); copyShareUrl()">
+  </div>
+
+  <div class="share-url-section">
+    <div class="share-url-row" *ngIf="previewUrl">
+      <input nz-input readonly [value]="previewUrl" #urlInput (click)="urlInput.select()" />
+      <button nz-button nz-tooltip nzTooltipTitle="Copy" (click)="urlInput.select(); copyShareUrl()">
         <i nz-icon nzType="copy"></i>
       </button>
+    </div>
+    <div class="share-url-note">
+      <i nz-icon nzType="info-circle"></i> {{ urlNote }}
     </div>
   </div>
 
   <div *nzModalFooter>
     <button nz-button (click)="onNoClick()">{{'dialog.cancel' | translate}}</button>
-    <button nz-button nzType="primary" (click)="onSaveAsNewClick()" *ngIf="!!data.id" cdkFocusInitial>{{'dialog.saveAsNew' | translate}}</button>
-    <button nz-button nzType="primary" (click)="onSaveClick()" cdkFocusInitial>{{'dialog.save' | translate}}</button>
+    <button nz-button nzType="primary" (click)="onSaveAsNewClick()" *ngIf="!!data.id">{{'dialog.saveAsNew' | translate}}</button>
+    <button nz-button nzType="primary" [nzLoading]="saving" (click)="onSaveClick()" cdkFocusInitial>{{ saveButtonLabel }}</button>
   </div>
 </div>
-

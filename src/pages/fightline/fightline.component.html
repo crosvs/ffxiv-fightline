@@ -94,10 +94,31 @@
       <button nz-button (click)="load()">
         <i nz-icon nzType="folder-open"></i>{{ "fightline.toolbar.menu.load" | translate }}
       </button>
-      <button nz-button (click)="saveFight()">
-        <i nz-icon nzType="save"></i>{{ "fightline.toolbar.menu.save" | translate }}
+      <button
+        nz-button
+        [nzLoading]="quickSaveState === 'saving'"
+        [disabled]="quickSaveState === 'done'"
+        (click)="quickSaveFight()"
+        nz-tooltip
+        nzTooltipTitle="Save using this fight's remembered name and sharing setting"
+      >
+        <i nz-icon [nzType]="quickSaveIcon"></i>{{ quickSaveLabel }}
+      </button>
+      <button
+        nz-button
+        nz-dropdown
+        [nzDropdownMenu]="saveAsMenu"
+        [nzDisabled]="quickSaveState === 'saving'"
+        nzTrigger="click"
+      >
+        <i nz-icon nzType="down"></i>
       </button>
     </nz-button-group>
+    <nz-dropdown-menu #saveAsMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item (click)="saveFight()">{{ "fightline.toolbar.menu.saveAs" | translate }}</li>
+      </ul>
+    </nz-dropdown-menu>
   </span>
   <span style="margin-left: 10px">
     <nz-button-group>

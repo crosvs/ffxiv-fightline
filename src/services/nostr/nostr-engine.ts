@@ -508,8 +508,9 @@ async function compressForStorage(json: string): Promise<{ content: string; comp
   }
 }
 
-/** Random 8-byte document id (16 hex chars) — used as the Nostr d-tag. */
-function randomDocId(): string {
+/** Random 8-byte document id (16 hex chars) — used as the Nostr d-tag. Exported so a caller can
+ *  reserve a stable id up front (e.g. to preview a share URL before ever actually publishing). */
+export function randomDocId(): string {
   return bytesToHex(crypto.getRandomValues(new Uint8Array(8)));
 }
 
@@ -652,7 +653,7 @@ export type NostrDocType = 'fight' | 'boss';
  * automatically; this helper exists only because share-URL construction here builds a plain
  * string outside the router and would otherwise silently drop that prefix.
  */
-function baseHref(): string {
+export function baseHref(): string {
   const href = document.querySelector('base')?.getAttribute('href') ?? '/';
   return href.endsWith('/') ? href : `${href}/`;
 }

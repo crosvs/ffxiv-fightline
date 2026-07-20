@@ -119,7 +119,8 @@ export class SerializeController {
       data: JSON.stringify(fightData),
       // Carried through so the save dialog can tell this fight was already published to Nostr —
       // otherwise every re-open of the dialog would look unlinked, even right after publishing.
-      nostr: this.data.fight && this.data.fight.nostr || undefined
+      nostr: this.data.fight && this.data.fight.nostr || undefined,
+      nostrShareEnabled: this.data.fight && this.data.fight.nostrShareEnabled || false
     } as IFight;
   }
 

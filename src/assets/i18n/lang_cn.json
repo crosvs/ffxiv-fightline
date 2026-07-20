@@ -155,6 +155,7 @@
 	"fightline.toolbar.menu.new": "新建",
 	"fightline.toolbar.menu.load": "打开",
 	"fightline.toolbar.menu.save": "保存",
+	"fightline.toolbar.menu.saveAs": "另存为",
 	"fightline.toolbar.menu.bossTemplates": "副本模板",
 	"fightline.toolbar.menu.tableview": "表格视图",
 	"fightline.toolbar.menu.openAsTable.defence": "减伤技能表",
