@@ -128,7 +128,10 @@ export class NostrMockService implements INostrService {
   }
 
   getShareUrl(docType: NostrDocType, pubkey: string, id: string): string {
-    return `${location.protocol}//${location.host}${location.pathname}#/nostr/${docType}/mock-${pubkey}/${id}`;
+    // Must match the real path-route format the app actually routes on (see
+    // nostr-engine.ts's getNostrShareUrl) — a #-fragment version here would silently fail to
+    // navigate anywhere, since Angular's PathLocationStrategy router never sees a hash fragment.
+    return `${location.origin}/nostr/${docType}/mock-${pubkey}/${id}`;
   }
 
   decodeUrlSegments(_pubToken: string, idToken: string): { pubkey: string; id: string } | undefined {

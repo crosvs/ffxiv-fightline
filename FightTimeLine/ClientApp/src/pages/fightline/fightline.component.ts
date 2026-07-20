@@ -503,11 +503,10 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   saveFight(): void {
-    if (!this.authenticationService.authenticated) {
-      this.notification.showSignInRequired(() => {});
-      return;
-    }
-
+    // No auth gate here anymore: this dialog now also offers publishing to Nostr, which
+    // deliberately needs no account at all — the old server-backed "Save"/"Save As New" buttons
+    // inside it still individually require auth (the server itself enforces that and surfaces a
+    // 401/403 through handleSaveError), but opening the dialog must not be blocked on it.
     this.dialogService
       .openSaveFight(() =>
         this.fightLineController.createSerializer().serializeFight()
