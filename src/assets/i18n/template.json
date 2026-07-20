@@ -164,6 +164,8 @@
 	"fightline.toolbar.menu.openAsTable._": "fightline.toolbar.menu.openAsTable._",
 	"fightline.toolbar.menu.export.json": "fightline.toolbar.menu.export.json",
 	"fightline.toolbar.menu.export._": "fightline.toolbar.menu.export._",
+	"fightline.toolbar.menu.importData.json": "fightline.toolbar.menu.importData.json",
+	"fightline.toolbar.menu.importData._": "fightline.toolbar.menu.importData._",
 	"fightline.toolbar.menu.fflogs.import": "fightline.toolbar.menu.fflogs.import",
 	"fightline.toolbar.menu.fflogs.importBossAttacks": "fightline.toolbar.menu.fflogs.importBossAttacks",
 	"fightline.toolbar.menu.fflogs._": "fightline.toolbar.menu.fflogs._",

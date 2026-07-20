@@ -61,6 +61,16 @@
         </li>
         <li
           nz-submenu
+          nzTitle="{{ 'fightline.toolbar.menu.importData._' | translate }}"
+        >
+          <ul>
+            <li nz-menu-item (click)="importJsonInput.click()">
+              {{ "fightline.toolbar.menu.importData.json" | translate }}
+            </li>
+          </ul>
+        </li>
+        <li
+          nz-submenu
           nzTitle="{{ 'fightline.toolbar.menu.fflogs._' | translate }}"
           *ngIf="gameService.showImport"
         >
@@ -77,6 +87,23 @@
         </li>
       </ul>
     </nz-dropdown-menu>
+    <input
+      #importJsonInput
+      type="file"
+      accept=".json"
+      style="display: none"
+      (change)="onImportJsonFileSelected($event)"
+    />
+  </span>
+  <span style="margin-left: 10px">
+    <nz-button-group>
+      <button nz-button (click)="load()">
+        <i nz-icon nzType="folder-open"></i>{{ "fightline.toolbar.menu.load" | translate }}
+      </button>
+      <button nz-button (click)="saveFight()">
+        <i nz-icon nzType="save"></i>{{ "fightline.toolbar.menu.save" | translate }}
+      </button>
+    </nz-button-group>
   </span>
   <span style="margin-left: 10px">
     <nz-button-group>

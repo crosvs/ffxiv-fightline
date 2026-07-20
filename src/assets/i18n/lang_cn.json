@@ -164,6 +164,8 @@
 	"fightline.toolbar.menu.openAsTable._": "以表格视图打开",
 	"fightline.toolbar.menu.export.json": "JSON",
 	"fightline.toolbar.menu.export._": "导出",
+	"fightline.toolbar.menu.importData.json": "JSON",
+	"fightline.toolbar.menu.importData._": "导入",
 	"fightline.toolbar.menu.fflogs.import": "导入",
 	"fightline.toolbar.menu.fflogs.importBossAttacks": "导入副本时间轴",
 	"fightline.toolbar.menu.fflogs._": "FFLogs",

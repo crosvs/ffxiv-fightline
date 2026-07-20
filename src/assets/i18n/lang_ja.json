@@ -164,6 +164,8 @@
 	"fightline.toolbar.menu.openAsTable._": "テーブルとして開く",
 	"fightline.toolbar.menu.export.json": "",
 	"fightline.toolbar.menu.export._": "",
+	"fightline.toolbar.menu.importData.json": "",
+	"fightline.toolbar.menu.importData._": "",
 	"fightline.toolbar.menu.fflogs.import": "インポート",
 	"fightline.toolbar.menu.fflogs.importBossAttacks": "ボス攻撃をインポートする",
 	"fightline.toolbar.menu.fflogs._": "FFLogs",

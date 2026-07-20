@@ -171,6 +171,8 @@
 	"fightline.toolbar.menu.openAsTable._": "Open as Table",
 	"fightline.toolbar.menu.export.json": "JSON",
 	"fightline.toolbar.menu.export._": "Export",
+	"fightline.toolbar.menu.importData.json": "JSON",
+	"fightline.toolbar.menu.importData._": "Import",
 	"fightline.toolbar.menu.fflogs.import": "Import",
 	"fightline.toolbar.menu.fflogs.importBossAttacks": "Import Boss Attacks",
 	"fightline.toolbar.menu.fflogs._": "FFLogs",

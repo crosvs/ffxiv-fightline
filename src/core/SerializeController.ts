@@ -328,3 +328,37 @@ export interface IBossAbilityUsageData {
   id: string;
   ability: IBossAbility;
 }
+
+// The "classic" export/import shape, unchanged since before this app's Nostr migration — a lossy
+// summary (job list + boss-attack/ability cast timestamps) rather than a full round-trippable
+// save. This is what the Export > JSON button has always produced, and what the JSON import (see
+// FightTimeLineController.importClassicExport) reads back in, so pulls exported from a previous
+// hosted deployment can be brought into a fresh fight here.
+export interface IClassicFightExport {
+  party: IClassicPartyMember[];
+  events: IClassicExportEvent[];
+}
+
+export interface IClassicPartyMember {
+  name: string;
+  id: number;
+}
+
+export interface IClassicExportEvent {
+  source: "boss" | number;
+  name: string;
+  offset: string;
+  tags?: string[];
+  description?: string;
+  damageType?: string;
+  guid?: number;
+  target?: number;
+  note?: string;
+}
+
+export interface IClassicImportResult {
+  jobsAdded: number;
+  bossAttacksAdded: number;
+  abilitiesAdded: number;
+  abilitiesSkipped: number;
+}

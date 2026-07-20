@@ -68,6 +68,13 @@ import { visibleFrameTemplate } from "src/core/Frame";
 export class FightLineComponent implements OnInit, OnDestroy {
   fightId: string;
   fflogsCode: string = null;
+  // Tracks whether the currently loaded fight actually has an IndexedDB record backing it —
+  // true for anything opened from a local draft (or a Nostr load that turned out to resolve to
+  // one via the staleness challenge) or that's been through Save/Publish this session; false
+  // for a blank new fight, an FFLogs/boss-template import, or a fresh Nostr load with no local
+  // counterpart. Drives the tab-close warning below: those cases have nowhere else for edits to
+  // go, so closing the tab would silently lose them.
+  persistedLocally = false;
 
   @ViewChild("sidepanel", { static: true })
   sidepanel: SidepanelComponent;
@@ -402,6 +409,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
           this.fightService.newFight("").subscribe(
             (value) => {
               this.fightId = value.id;
+              this.persistedLocally = false;
               this.recent.register({
                 name: parser.fight.name,
                 boss: parser.fight.boss,
@@ -494,6 +502,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
       )
       .then((result) => {
         if (result !== null && result !== undefined) {
+          this.persistedLocally = true;
           this.recent.register({
             name: result.name,
             url: "/" + result.id.toLowerCase(),
@@ -565,6 +574,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
       this.fightService.newFight("").subscribe(
         (value) => {
           this.fightId = value.id;
+          this.persistedLocally = false;
           ref.close();
         },
         (error) => {
@@ -588,9 +598,10 @@ export class FightLineComponent implements OnInit, OnDestroy {
     fight: M.IFight,
     preset: string | undefined,
     ref: { close: () => void },
-    opts: { recentUrl: string; withCommandHistory: boolean }
+    opts: { recentUrl: string; withCommandHistory: boolean; persistedLocally: boolean }
   ): void {
     this.fightId = fight.id;
+    this.persistedLocally = opts.persistedLocally;
     this.recent.register({
       id: fight.id,
       name: fight.name,
@@ -653,6 +664,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
             this.applyFightData(fight, preset, ref, {
               recentUrl: "/" + fight.id.toLowerCase(),
               withCommandHistory: true,
+              persistedLocally: true,
             });
           } else {
             ref.close();
@@ -740,7 +752,11 @@ export class FightLineComponent implements OnInit, OnDestroy {
                 localFight &&
                 new Date(localFight.dateModified).getTime() > result.publishedAt.getTime()
               ) {
-                this.applyFightData(localFight, preset, ref, { recentUrl, withCommandHistory: true });
+                this.applyFightData(localFight, preset, ref, {
+                  recentUrl,
+                  withCommandHistory: true,
+                  persistedLocally: true,
+                });
                 return;
               }
 
@@ -759,7 +775,11 @@ export class FightLineComponent implements OnInit, OnDestroy {
                 // changed, or this is someone else's shared fight rather than your own.
                 nostr: { pubkey, id, visibility: result.visibility },
               };
-              this.applyFightData(fight, preset, ref, { recentUrl, withCommandHistory: false });
+              this.applyFightData(fight, preset, ref, {
+                recentUrl,
+                withCommandHistory: false,
+                persistedLocally: false,
+              });
             });
         },
         error: (error) => {
@@ -784,6 +804,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
               // newFight() only mints an in-memory id — the URL stays on this nostr/... route
               // (not rewritten to a local draft id) until the user explicitly saves.
               this.fightId = value.id;
+              this.persistedLocally = false;
               try {
                 const settings = this.settingsService.load();
                 this.presenterManager.setSettings(settings);
@@ -823,6 +844,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
             // newFight() only mints an in-memory id — the URL stays on this boss/:boss route
             // (not rewritten to a local draft id) until the user explicitly saves.
             this.fightId = value.id;
+            this.persistedLocally = false;
             try {
               const settings = this.settingsService.load();
 
@@ -944,10 +966,16 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
   @HostListener("window:beforeunload", ["$event"])
   beforeUnloadHandler(event: any) {
-    //    if (this.hasChanges && Environment.environment.showDialogOnUnload) {
-    //      event.returnValue = "You have unsaved changes. Are you sure you want to leave?";
-    //      return event.returnValue;
-    //    }
+    // Autosave isn't a thing anymore — there's no server quietly persisting edits in the
+    // background. Only warn when there's actually somewhere for the loss to happen: changes
+    // made to a fight that has never been through Save/Publish (no IndexedDB record backing it
+    // yet). Once it's saved locally, edits since the last save live in IndexedDB via the command
+    // log, so closing the tab isn't destructive the same way.
+    if (this.hasChanges && !this.persistedLocally) {
+      event.preventDefault();
+      event.returnValue = "You have unsaved changes that haven't been saved yet. Are you sure you want to leave?";
+      return event.returnValue;
+    }
     return null;
   }
 
@@ -993,6 +1021,73 @@ export class FightLineComponent implements OnInit, OnDestroy {
       type: "application/json",
     });
     saveData(blob, "data.json");
+  }
+
+  /** Triggered by a hidden file input — reads a classic {party, events} export (the shape the
+   *  Export > JSON button above has always produced, including on the old hosted deployment) and
+   *  rebuilds it as a fresh, unsaved fight. Best-effort: that shape never carried full fidelity,
+   *  so ability matching is name-based and anything that can't be matched is skipped and reported. */
+  onImportJsonFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) {
+      return;
+    }
+
+    if (this.fightLineController.hasChanges && !confirm("Importing will replace the current timeline with the imported data. Continue?")) {
+      return;
+    }
+
+    file.text().then((text) => {
+      let data: SerializeController.IClassicFightExport;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        this.notification.error("This file isn't valid JSON.");
+        return;
+      }
+      if (!data || !Array.isArray(data.party) || !Array.isArray(data.events)) {
+        this.notification.error("This doesn't look like exported FightLine data.");
+        return;
+      }
+
+      this.dialogService.executeWithLoading("Importing...", (ref) => {
+        this.presenterManager.reset();
+        this.fightService.newFight("").subscribe(
+          (value) => {
+            this.fightId = value.id;
+            this.persistedLocally = false;
+            try {
+              const settings = this.settingsService.load();
+              this.presenterManager.setSettings(settings);
+              this.fightLineController.applyView(settings.main.defaultView);
+              this.fightLineController.applyFilter(settings.main.defaultFilter);
+
+              const result = this.fightLineController.importClassicExport(data);
+              this.planArea.setInitialWindow(this.fightLineController.getLatestBossAttackTime(), 2);
+              this.planArea.refresh();
+
+              this.notification.success(
+                `Imported ${result.jobsAdded} jobs, ${result.bossAttacksAdded} boss attacks and ${result.abilitiesAdded} abilities.` +
+                  (result.abilitiesSkipped
+                    ? ` ${result.abilitiesSkipped} abilities couldn't be matched and were skipped.`
+                    : "")
+              );
+            } catch (error) {
+              console.log(error);
+              this.notification.error("Unable to import this file.");
+            }
+            ref.close();
+          },
+          (error) => {
+            console.log(error);
+            this.notification.error("Unable to start fight");
+            ref.close();
+          }
+        );
+      });
+    });
   }
 
   private subscribeToDispatcher(

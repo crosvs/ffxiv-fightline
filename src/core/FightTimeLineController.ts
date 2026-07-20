@@ -21,6 +21,7 @@ import * as SwitchTargetCommand from "./commands/SwitchTargetCommand";
 import * as RemoveAbilityCommand from "./commands/RemoveAbilityCommand";
 import * as AddAbilityCommand from "./commands/AddAbilityCommand";
 import * as AddBatchAttacksCommand from "./commands/AddBatchAttacksCommand";
+import * as AddBatchUsagesCommand from "./commands/AddBatchUsagesCommand";
 import * as MoveCommand from "./commands/MoveCommand";
 import * as ChangeBossAttackCommand from "./commands/ChangeBossAttackCommand";
 import * as RemoveBossAttackCommand from "./commands/RemoveBossAttackCommand";
@@ -1140,6 +1141,99 @@ export class FightTimeLineController {
       this.applyView(this.presenterManager.view, true);
       this.applyFilter();
     }
+  }
+
+  /**
+   * Reads back the lossy "classic" {party, events} shape produced by serializeForDownload() —
+   * the format this app's Export > JSON button has always used, including the old hosted
+   * deployment this fork replaced. There's no server left to hold onto that data, so this is the
+   * bridge for anyone who exported a pull there and wants it on the timeline here. Best-effort by
+   * necessity: that shape never carried boss identity/downtime or per-ability settings, only job
+   * names + boss-attack/ability cast timestamps, so ability matching is done by display name
+   * against the job's known ability list — anything that doesn't resolve is skipped and counted
+   * rather than silently dropped.
+   */
+  importClassicExport(data: SerializeController.IClassicFightExport): SerializeController.IClassicImportResult {
+    const orderToJobId = new Map<number, string>();
+    let jobsAdded = 0;
+
+    (data.party || []).forEach((p) => {
+      const id = this.addJob(null, p.name, undefined, undefined, false, false);
+      orderToJobId.set(p.id, id);
+      jobsAdded++;
+    });
+
+    const bossAttackCommands: AddBossAttackCommand.AddBossAttackCommand[] = [];
+    const abilityCommands: AddAbilityCommand.AddAbilityCommand[] = [];
+    let abilitiesSkipped = 0;
+
+    (data.events || []).forEach((ev) => {
+      if (ev.source === "boss") {
+        const bossAbility: M.IBossAbility = {
+          name: ev.name,
+          type: ev.damageType !== undefined ? (M.DamageType[ev.damageType] as unknown as M.DamageType) : undefined,
+          offset: ev.offset as M.TimeOffset,
+          tags: ev.tags || [],
+          description: ev.description,
+        };
+        bossAttackCommands.push(
+          new AddBossAttackCommand.AddBossAttackCommand(
+            this.idgen.getNextId(M.EntryType.BossAttack),
+            bossAbility
+          )
+        );
+        return;
+      }
+
+      const jobId = orderToJobId.get(ev.source as number);
+      const abilityMap = jobId && this.holders.abilities.getByParentAndAbility(jobId, ev.name);
+      if (!abilityMap) {
+        abilitiesSkipped++;
+        return;
+      }
+
+      const settings: M.ISettingData[] = [];
+      if (ev.target !== undefined) {
+        const targetJobId = orderToJobId.get(ev.target);
+        if (targetJobId) {
+          settings.push({ name: "target", value: targetJobId });
+        }
+      }
+      if (ev.note) {
+        settings.push({ name: "note", value: ev.note });
+      }
+
+      abilityCommands.push(
+        new AddAbilityCommand.AddAbilityCommand(
+          this.idgen.getNextId(M.EntryType.AbilityUsage),
+          null,
+          jobId,
+          ev.name,
+          Utils.getDateFromOffset(ev.offset),
+          false,
+          settings
+        )
+      );
+    });
+
+    if (bossAttackCommands.length) {
+      this.commandStorage.execute(new AddBatchAttacksCommand.AddBatchAttacksCommand(bossAttackCommands));
+    }
+    if (abilityCommands.length) {
+      this.commandStorage.execute(new AddBatchUsagesCommand.AddBatchUsagesCommand(abilityCommands));
+    }
+
+    this.holders.bossTargets.initialBossTarget = "boss";
+    this.recalculateBossTargets();
+    this.applyView(this.presenterManager.view, true);
+    this.applyFilter();
+
+    return {
+      jobsAdded,
+      bossAttacksAdded: bossAttackCommands.length,
+      abilitiesAdded: abilityCommands.length,
+      abilitiesSkipped,
+    };
   }
 
   applyView(view: M.IView, force?: boolean): void {
