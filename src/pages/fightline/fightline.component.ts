@@ -7,6 +7,7 @@ import {
   Inject,
 } from "@angular/core";
 import { Location } from "@angular/common";
+import { catchError, of } from "rxjs";
 import {
   ActivatedRoute,
   ActivatedRouteSnapshot,
@@ -393,16 +394,20 @@ export class FightLineComponent implements OnInit, OnDestroy {
           this.progressBar.set(percentage * 100)
         )
         .then((parser) => {
+          // newFight() only mints an in-memory id — the URL stays on this fflogs/... route (not
+          // rewritten to a local draft id) until the user explicitly saves, so re-opening this
+          // exact FFLogs pull always re-imports fresh rather than depending on a draft that may
+          // never get saved. The recent-activity entry points at the same stable route for the
+          // same reason — it re-runs this import on click, it doesn't resume an in-memory draft.
           this.fightService.newFight("").subscribe(
             (value) => {
               this.fightId = value.id;
-              this.location.replaceState("/" + value.id);
               this.recent.register({
                 name: parser.fight.name,
                 boss: parser.fight.boss,
                 source: ActivitySource.FFLogs,
                 timestamp: new Date(),
-                url: "/" + value.id.toLowerCase(),
+                url: `/fflogs/${code}/${enc}`,
                 id: value.id.toLowerCase(),
               });
               const settings = this.settingsService.load();
@@ -496,7 +501,16 @@ export class FightLineComponent implements OnInit, OnDestroy {
             id: result.id.toLowerCase(),
           });
           this.fightLineController.updateFight(result);
-          this.location.replaceState(`/${result.id}`);
+          // When this fight is linked to Nostr, the address bar should show the shareable
+          // /nostr/... path (so it's copy-paste ready straight from the URL bar) rather than the
+          // local draft id, which only resolves on this device. The "recent activities" entry
+          // above deliberately still points at the local id — that's for fast re-access from
+          // this browser, not for sharing, and shouldn't pay a relay round-trip just to reopen.
+          this.location.replaceState(
+            result.nostr
+              ? this.nostrService.getRoutePath("fight", result.nostr.pubkey, result.nostr.id)
+              : `/${result.id}`
+          );
           this.notification.showFightSaved();
         }
       })
@@ -544,16 +558,13 @@ export class FightLineComponent implements OnInit, OnDestroy {
       const settings = this.settingsService.load();
       this.presenterManager.setSettings(settings);
 
+      // newFight() only mints an in-memory id here — nothing is written to IndexedDB, and the
+      // URL deliberately stays on "/new" (not this.fightId), until the user explicitly saves. A
+      // blank, unsaved fight also isn't meaningfully "recent" to return to (revisiting "/new"
+      // starts another one, it doesn't resume this one), so it's not registered there either.
       this.fightService.newFight("").subscribe(
         (value) => {
           this.fightId = value.id;
-          this.location.replaceState("/" + value.id);
-          this.recent.register({
-            name: "New",
-            url: "/" + value.id.toLowerCase(),
-            source: ActivitySource.Timeline,
-            id: value.id.toLowerCase(),
-          });
           ref.close();
         },
         (error) => {
@@ -567,69 +578,82 @@ export class FightLineComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Shared tail end of every "load a fight into the editor" path (local draft, or a Nostr fetch
+   * that turned out to have a newer local counterpart). Centralized so the staleness challenge in
+   * loadFightFromNostr can fall through to a real local load — with its own command history —
+   * using exactly the same logic a plain local open would use.
+   */
+  private applyFightData(
+    fight: M.IFight,
+    preset: string | undefined,
+    ref: { close: () => void },
+    opts: { recentUrl: string; withCommandHistory: boolean }
+  ): void {
+    this.fightId = fight.id;
+    this.recent.register({
+      id: fight.id,
+      name: fight.name,
+      source: ActivitySource.Timeline,
+      url: opts.recentUrl,
+    });
+
+    const settings = this.settingsService.load();
+    this.presenterManager.setSettings(settings);
+
+    const loadedData =
+      fight.data && (JSON.parse(fight.data) as SerializeController.IFightSerializeData);
+    if (loadedData?.filter) {
+      this.presenterManager.filter = loadedData.filter;
+    }
+    if (loadedData?.view) {
+      this.presenterManager.view = loadedData.view;
+    }
+
+    this.presenterManager.load(fight.id);
+
+    const finish = (commands?: any[]) => {
+      this.planArea.setInitialWindow(this.fightLineController.getLatestBossAttackTime(), 2);
+      this.planArea.refresh();
+      try {
+        this.fightLineController.loadFight(fight, loadedData, commands);
+        if (preset) {
+          this.fightLineController.loadPreset(preset);
+        }
+      } catch (error) {
+        this.notification.error(
+          "We are unable to load this fight. Dev team is already informed about this case"
+        );
+      }
+      ref.close();
+    };
+
+    if (opts.withCommandHistory) {
+      this.fightService
+        .getCommands(fight.id, new Date(fight.dateModified).valueOf())
+        .subscribe({
+          next: (commands) => finish(commands.map((cmd) => JSON.parse(cmd.data))),
+          error: (error) => {
+            console.log(error);
+            this.notification.error("Unable to load data");
+            ref.close();
+          },
+        });
+    } else {
+      finish();
+    }
+  }
+
   private loadFight(id: string, preset?: string) {
     this.dialogService.executeWithLoading("Loading...", (ref) => {
       this.presenterManager.reset();
-      this.fightId = id;
       this.fightService.getFight(id).subscribe(
         (fight: M.IFight) => {
           if (fight) {
-            this.recent.register({
-              id: fight.id,
-              name: fight.name,
-              source: ActivitySource.Timeline,
-              url: "/" + fight.id.toLowerCase(),
+            this.applyFightData(fight, preset, ref, {
+              recentUrl: "/" + fight.id.toLowerCase(),
+              withCommandHistory: true,
             });
-
-            const settings = this.settingsService.load();
-            this.presenterManager.setSettings(settings);
-
-            const loadedData =
-              fight.data &&
-              (JSON.parse(
-                fight.data
-              ) as SerializeController.IFightSerializeData);
-            if (loadedData.filter) {
-              this.presenterManager.filter = loadedData.filter;
-            }
-            if (loadedData.view) {
-              this.presenterManager.view = loadedData.view;
-            }
-
-            this.presenterManager.load(fight.id);
-
-            this.fightService
-              .getCommands(this.fightId, new Date(fight.dateModified).valueOf())
-              .subscribe({
-                next: (commands) => {
-                  this.planArea.setInitialWindow(
-                    this.fightLineController.getLatestBossAttackTime(),
-                    2
-                  );
-                  this.planArea.refresh();
-                  try {
-                    this.fightLineController.loadFight(
-                      fight,
-                      loadedData,
-                      commands.map((cmd) => JSON.parse(cmd.data))
-                    );
-                    if (preset) {
-                      console.log("loading preset");
-                      this.fightLineController.loadPreset(preset);
-                    }
-                  } catch (error) {
-                    this.notification.error(
-                      "We are unable to load this fight. Dev team is already informed about this case"
-                    );
-                  }
-                  ref.close();
-                },
-                error: (error) => {
-                  console.log(error);
-                  this.notification.error("Unable to load data");
-                  ref.close();
-                },
-              });
           } else {
             ref.close();
           }
@@ -688,10 +712,11 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Loads a fight published to Nostr — the serverless share-link path. Deliberately skips
-   * getCommands(): a Nostr-loaded fight shows its latest published snapshot only, matching
-   * XIVPlan's model (no cross-session command-replay history) — in-session undo/redo still works
-   * since that's already local to fightLineController/UndoRedoController.
+   * Loads a fight published to Nostr — the serverless share-link path. Normally shows the fetched
+   * snapshot as-is (no command-replay history, matching XIVPlan's model — in-session undo/redo
+   * still works since that's already local to fightLineController/UndoRedoController), unless a
+   * local draft already linked to this same document turns out to be newer, in which case that
+   * local draft (with its own history) is loaded instead — see the staleness challenge below.
    */
   private loadFightFromNostr(pubkey: string, id: string, preset?: string): void {
     this.dialogService.executeWithLoading({ text: "Loading from Nostr...", nostr: true }, (ref) => {
@@ -699,42 +724,43 @@ export class FightLineComponent implements OnInit, OnDestroy {
       this.fightId = id;
       this.nostrService.fetchFight(pubkey, id).subscribe({
         next: (result) => {
-          const loadedData = JSON.parse(result.content) as SerializeController.IFightSerializeData;
-          const fight: M.IFight = {
-            id,
-            name: result.name,
-            userName: pubkey.slice(0, 8),
-            data: result.content,
-            isDraft: false,
-            dateModified: new Date(),
-            game: this.gameService.name,
-            // Records where this came from so a later re-publish (from the save dialog) can
-            // update this same Nostr document instead of minting a new one — but only once
-            // re-verified against whatever key is active at publish time, in case it's since
-            // changed, or this is someone else's shared fight rather than your own.
-            nostr: { pubkey, id, visibility: result.visibility },
-          };
+          const recentUrl = this.nostrService.getShareUrl("fight", pubkey, id);
 
-          this.recent.register({
-            id: fight.id,
-            name: fight.name,
-            source: ActivitySource.Timeline,
-            url: this.nostrService.getShareUrl("fight", pubkey, id),
-          });
+          // Challenge the fetched relay snapshot against any local draft already linked to this
+          // same Nostr document (once consensus above has actually resolved a result). A local
+          // draft can be ahead of the relays — edited but not yet republished — so on a refresh
+          // or reopening this share link, whichever side is more recent wins; loading the older
+          // one unconditionally could silently show stale content, or get overwritten right back
+          // onto the relays on the next publish.
+          this.fightService
+            .findFightByNostrLink(pubkey, id)
+            .pipe(catchError(() => of(null)))
+            .subscribe((localFight) => {
+              if (
+                localFight &&
+                new Date(localFight.dateModified).getTime() > result.publishedAt.getTime()
+              ) {
+                this.applyFightData(localFight, preset, ref, { recentUrl, withCommandHistory: true });
+                return;
+              }
 
-          const settings = this.settingsService.load();
-          this.presenterManager.setSettings(settings);
-          if (loadedData.filter) this.presenterManager.filter = loadedData.filter;
-          if (loadedData.view) this.presenterManager.view = loadedData.view;
-
-          this.presenterManager.load(fight.id);
-          this.fightLineController.loadFight(fight, loadedData);
-          this.planArea.setInitialWindow(this.fightLineController.getLatestBossAttackTime(), 2);
-          this.planArea.refresh();
-          if (preset) {
-            this.fightLineController.loadPreset(preset);
-          }
-          ref.close();
+              const loadedData = JSON.parse(result.content) as SerializeController.IFightSerializeData;
+              const fight: M.IFight = {
+                id,
+                name: result.name,
+                userName: pubkey.slice(0, 8),
+                data: result.content,
+                isDraft: false,
+                dateModified: result.publishedAt,
+                game: this.gameService.name,
+                // Records where this came from so a later re-publish (from the save dialog) can
+                // update this same Nostr document instead of minting a new one — but only once
+                // re-verified against whatever key is active at publish time, in case it's since
+                // changed, or this is someone else's shared fight rather than your own.
+                nostr: { pubkey, id, visibility: result.visibility },
+              };
+              this.applyFightData(fight, preset, ref, { recentUrl, withCommandHistory: false });
+            });
         },
         error: (error) => {
           console.log(error);
@@ -755,8 +781,9 @@ export class FightLineComponent implements OnInit, OnDestroy {
           bossData.nostr = { pubkey, id, visibility: result.visibility };
           this.fightService.newFight("").subscribe(
             (value) => {
+              // newFight() only mints an in-memory id — the URL stays on this nostr/... route
+              // (not rewritten to a local draft id) until the user explicitly saves.
               this.fightId = value.id;
-              this.location.replaceState("/" + value.id);
               try {
                 const settings = this.settingsService.load();
                 this.presenterManager.setSettings(settings);
@@ -793,8 +820,9 @@ export class FightLineComponent implements OnInit, OnDestroy {
       const func = (fraction: M.IFraction, bossData: M.IBoss) => {
         this.fightService.newFight(fraction ? fraction.name : "").subscribe(
           (value) => {
+            // newFight() only mints an in-memory id — the URL stays on this boss/:boss route
+            // (not rewritten to a local draft id) until the user explicitly saves.
             this.fightId = value.id;
-            this.location.replaceState("/" + value.id);
             try {
               const settings = this.settingsService.load();
 

@@ -33,6 +33,7 @@ function toFetchResult(r: {
   content: string;
   name: string;
   visibility: "public" | "private";
+  publishedAt: Date;
   agreeingRelays: number;
   totalRelays: number;
 }): INostrFetchResult {

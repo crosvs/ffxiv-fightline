@@ -1060,6 +1060,7 @@ export interface FetchDocResult {
   content: string;
   visibility: 'public' | 'private';
   name: string;
+  publishedAt: Date;
   agreeingRelays: number;
   totalRelays: number;
 }
@@ -1385,7 +1386,7 @@ export function createDocumentStore(indexKind: number, dataKind: number, cacheNa
       }
     }
 
-    return { content, visibility, name, agreeingRelays, totalRelays };
+    return { content, visibility, name, publishedAt: new Date(dataEvent.created_at * 1000), agreeingRelays, totalRelays };
   }
 
   async function rename(id: string, newName: string, newVisibility: 'public' | 'private'): Promise<NostrDocInfo> {

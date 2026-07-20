@@ -1,17 +1,16 @@
 <ng-container *ngIf="!data.nostr">
   <nz-spin [nzSize]="'large'" [nzTip]="data.text">
-    <div style="width: 150px; height: 100px"></div>
+    <div class="loading-plain"></div>
   </nz-spin>
 </ng-container>
 
-<div
-  *ngIf="data.nostr"
-  style="width: 220px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px"
->
-  <nostr-status
-    [relayStatus$]="nostrStatus.fetchStatus$"
-    [progress$]="nostrStatus.consensusProgress$"
-    [size]="40"
-  ></nostr-status>
-  <span>{{ data.text }}</span>
+<div *ngIf="data.nostr" class="loading-nostr">
+  <div class="loading-nostr__icon">
+    <nostr-status
+      [relayStatus$]="nostrStatus.fetchStatus$"
+      [progress$]="nostrStatus.consensusProgress$"
+      [size]="40"
+    ></nostr-status>
+  </div>
+  <span class="loading-nostr__text">{{ data.text }}</span>
 </div>

@@ -5,6 +5,7 @@ export interface INostrFetchResult {
   content: string;
   name: string;
   visibility: "public" | "private";
+  publishedAt: Date;
   agreeingRelays: number;
   totalRelays: number;
 }

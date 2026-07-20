@@ -95,6 +95,15 @@ export class FightsService implements IFightService {
     );
   }
 
+  findFightByNostrLink(pubkey: string, id: string): Observable<IFight | null> {
+    return from(
+      fightsStore.keys().then(async (keys) => {
+        const fights = await Promise.all(keys.map((k) => fightsStore.getItem<IFight>(k)));
+        return fights.find((f) => f?.nostr?.pubkey === pubkey && f?.nostr?.id === id) ?? null;
+      })
+    );
+  }
+
   removeFights(ids: string[]): Observable<any> {
     return from(Promise.all(ids.map((id) => fightsStore.removeItem(id).then(() => commandsStore.removeItem(id)))));
   }
@@ -111,7 +120,13 @@ export class FightsService implements IFightService {
       dateModified: now,
       game: fraction ? `${this.gameService.name}:${fraction}` : this.gameService.name,
     };
-    return from(fightsStore.setItem(fight.id, fight).then(() => fight));
+    // Deliberately NOT persisted — this only mints an in-memory skeleton with a stable id (still
+    // useful for keying per-session bookkeeping like PresenterManager's view state). The fight
+    // is written to IndexedDB for the first time by saveFight(), i.e. only once the user
+    // explicitly goes through Save (or Publish, which also saves locally) — loading a fresh
+    // FFLogs import, a curated boss template, or a blank new fight must never silently create a
+    // draft nobody asked to keep.
+    return from(Promise.resolve(fight));
   }
 
   addCommand(fight: string, data: any): Observable<{ id: number }> {

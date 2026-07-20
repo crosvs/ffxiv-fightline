@@ -9,6 +9,7 @@ export interface IFightService {
   saveFight(fight: IFight): Observable<IFight>;
   getFight(id: string): Observable<IFight>;
   getFightsForUser(): Observable<IFight[]>;
+  findFightByNostrLink(pubkey: string, id: string): Observable<IFight | null>;
   removeFights(map: any[]): Observable<any>;
   newFight(fraction: string): Observable<IFight>;
   addCommand(fight: string, data: any): Observable<any>;
