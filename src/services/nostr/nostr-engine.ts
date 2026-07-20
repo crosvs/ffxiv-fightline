@@ -663,6 +663,17 @@ export function getNostrShareUrl(docType: NostrDocType, pubkey: string, id: stri
   return `${location.origin}${baseHref()}nostr/${docType}/${pubToken}/${idToken}`;
 }
 
+/**
+ * The router-relative counterpart of {@link getNostrShareUrl} — for `Router.navigateByUrl()`
+ * calls (e.g. selecting a vault entry), which already resolve paths relative to `<base href>`
+ * themselves and would double up the prefix if given the full absolute URL instead.
+ */
+export function getNostrRoutePath(docType: NostrDocType, pubkey: string, id: string): string {
+  const pubToken = bytesToBase64Url(hexToBytes(pubkey));
+  const idToken = bytesToBase64Url(hexToBytes(id));
+  return `/nostr/${docType}/${pubToken}/${idToken}`;
+}
+
 export function decodeNostrUrlSegments(
   pubToken: string,
   idToken: string,

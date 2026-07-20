@@ -694,7 +694,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
    * since that's already local to fightLineController/UndoRedoController.
    */
   private loadFightFromNostr(pubkey: string, id: string, preset?: string): void {
-    this.dialogService.executeWithLoading("Loading...", (ref) => {
+    this.dialogService.executeWithLoading({ text: "Loading from Nostr...", nostr: true }, (ref) => {
       this.presenterManager.reset();
       this.fightId = id;
       this.nostrService.fetchFight(pubkey, id).subscribe({
@@ -743,7 +743,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
   /** Boss-variant equivalent of loadFightFromNostr — like the existing loadBoss(), this starts a
    *  brand-new fight shell and loads the fetched boss data into it as the starting encounter. */
   private loadBossFromNostr(pubkey: string, id: string): void {
-    this.dialogService.executeWithLoading("Loading...", (ref) => {
+    this.dialogService.executeWithLoading({ text: "Loading from Nostr...", nostr: true }, (ref) => {
       this.nostrService.fetchBoss(pubkey, id).subscribe({
         next: (result) => {
           const bossData = JSON.parse(result.content) as M.IBoss;

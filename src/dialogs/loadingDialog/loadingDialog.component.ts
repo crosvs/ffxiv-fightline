@@ -1,5 +1,6 @@
-import { Component } from "@angular/core";
-import { NzModalRef } from "ng-zorro-antd/modal";
+import { Component, inject } from "@angular/core";
+import { NZ_MODAL_DATA, NzModalRef } from "ng-zorro-antd/modal";
+import { NostrStatusService } from "../../services/nostr/nostr-status.service";
 
 @Component({
     selector: "loadingDialog",
@@ -8,11 +9,11 @@ import { NzModalRef } from "ng-zorro-antd/modal";
 })
 export class LoadingDialogComponent {
 
-    public text = "Loading...";
+    data: { text: string; nostr?: boolean } = inject(NZ_MODAL_DATA) ?? { text: "Loading..." };
 
     constructor(
-        public dialogRef: NzModalRef
+        public dialogRef: NzModalRef,
+        public nostrStatus: NostrStatusService
         ) {
     }
 }
-

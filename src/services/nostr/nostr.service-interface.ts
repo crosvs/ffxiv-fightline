@@ -44,6 +44,7 @@ export interface INostrService {
   listMyBosses(opts?: { until?: number }): Observable<INostrListResult>;
 
   getShareUrl(docType: NostrDocType, pubkey: string, id: string): string;
+  getRoutePath(docType: NostrDocType, pubkey: string, id: string): string;
   decodeUrlSegments(pubToken: string, idToken: string): { pubkey: string; id: string } | undefined;
   parsePubkeyInput(input: string): string;
 }

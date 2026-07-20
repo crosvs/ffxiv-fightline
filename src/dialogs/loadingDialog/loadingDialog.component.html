@@ -1,1 +1,10 @@
-<nz-spin [nzSize]="'large'" [nzTip]="text"><div style="width: 150px; height: 100px"></div></nz-spin>
+<nz-spin [nzSize]="'large'" [nzTip]="data.text">
+  <div style="width: 100%; min-width: 150px; height: 100px; display: flex; align-items: center; justify-content: center">
+    <nostr-status
+      *ngIf="data.nostr"
+      [relayStatus$]="nostrStatus.fetchStatus$"
+      [progress$]="nostrStatus.consensusProgress$"
+      [size]="36"
+    ></nostr-status>
+  </div>
+</nz-spin>

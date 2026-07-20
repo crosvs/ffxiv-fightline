@@ -173,21 +173,24 @@ export class DialogService {
     });
   }
 
-  executeWithLoading(text: string, action: (ref: { close(): void }) => void) {
+  executeWithLoading(
+    text: string | { text: string; nostr: boolean },
+    action: (ref: { close(): void }) => void
+  ) {
     let loadingDialogRef: any;
     setTimeout(() => {
       loadingDialogRef = this.dialogs.create({
         nzWrapClassName: "vertical-center-modal",
         nzContent: D.LoadingDialog,
         nzTitle: null,
-        nzWidth: 150,
+        nzWidth: typeof text === "string" ? 150 : 220,
         nzClosable: false,
         nzKeyboard: false,
         nzOkDisabled: true,
         nzCancelDisabled: true,
         nzFooter: null,
         nzMaskClosable: false,
-        nzData: text,
+        nzData: typeof text === "string" ? { text } : text,
       });
 
       loadingDialogRef.afterOpen.subscribe(() => {

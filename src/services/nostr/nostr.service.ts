@@ -9,6 +9,7 @@ import {
   importSecretKey,
   exportSecretKeyBlob,
   getNostrShareUrl,
+  getNostrRoutePath,
   decodeNostrUrlSegments,
   parseInputPubkey,
   NostrDocInfo,
@@ -106,6 +107,10 @@ export class NostrService implements INostrService {
 
   getShareUrl(docType: NostrDocType, pubkey: string, id: string): string {
     return getNostrShareUrl(docType, pubkey, id);
+  }
+
+  getRoutePath(docType: NostrDocType, pubkey: string, id: string): string {
+    return getNostrRoutePath(docType, pubkey, id);
   }
 
   decodeUrlSegments(pubToken: string, idToken: string): { pubkey: string; id: string } | undefined {

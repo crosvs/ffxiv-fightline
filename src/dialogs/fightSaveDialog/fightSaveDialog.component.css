@@ -1,7 +1,21 @@
 .nostr-publish-section {
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 12px;
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(24, 144, 255, 0.04);
+}
+
+.nostr-publish-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.nostr-publish-subtitle {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
 }
 
 .nostr-publish-row {
@@ -9,6 +23,11 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.nostr-share-url {
+  display: flex;
+  gap: 8px;
 }
 
 .nostr-share-url input {

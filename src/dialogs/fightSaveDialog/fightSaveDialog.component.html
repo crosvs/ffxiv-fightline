@@ -8,16 +8,25 @@
   </form>
 
   <div class="nostr-publish-section">
-    <div class="nostr-publish-row">
-      <span>Share as a portable link (no account needed to open):</span>
+    <div class="nostr-publish-heading">
+      <i nz-icon nzType="global"></i>
+      <strong>Share via Nostr</strong>
+      <span class="nostr-publish-subtitle">— a portable link anyone can open, no account needed</span>
       <nostr-status *ngIf="publishingNostr" [progress$]="nostrStatus.publishProgress$"></nostr-status>
     </div>
     <div class="nostr-publish-row">
-      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('public')">Publish (public)</button>
-      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('private')">Publish (only me)</button>
+      <button nz-button nzType="primary" [nzLoading]="publishingNostr" (click)="onPublishNostrClick('public')">
+        <i nz-icon nzType="upload"></i> Publish (public)
+      </button>
+      <button nz-button [nzLoading]="publishingNostr" (click)="onPublishNostrClick('private')">
+        <i nz-icon nzType="lock"></i> Publish (only me)
+      </button>
     </div>
     <div *ngIf="nostrShareUrl" class="nostr-share-url">
       <input nz-input readonly [value]="nostrShareUrl" #nostrUrlInput (click)="nostrUrlInput.select()" />
+      <button nz-button nz-tooltip nzTooltipTitle="Copy" (click)="nostrUrlInput.select(); copyShareUrl()">
+        <i nz-icon nzType="copy"></i>
+      </button>
     </div>
   </div>
 

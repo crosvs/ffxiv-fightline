@@ -84,6 +84,14 @@ export class FightSaveDialogComponent {
     });
   }
 
+  copyShareUrl(): void {
+    if (!this.nostrShareUrl) return;
+    navigator.clipboard?.writeText(this.nostrShareUrl).then(
+      () => this.notification.success("Link copied."),
+      () => {} // clipboard permission denied — the input is still select()-ed for manual copy
+    );
+  }
+
   handleSaveError(error: any) {
     // console.log(error);
     let text: string = error.statusText;
