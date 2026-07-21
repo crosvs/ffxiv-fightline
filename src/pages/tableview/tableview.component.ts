@@ -19,6 +19,8 @@ import {
 } from "../../core/BaseExportTemplate";
 import { gameServiceToken } from "../../services/game.service-provider";
 import { IGameService } from "../../services/game.service-interface";
+import { INostrService } from "../../services/nostr/nostr.service-interface";
+import { nostrServiceToken } from "../../services/nostr/nostr.service-provider";
 
 import * as FightTimeLineController from "../../core/FightTimeLineController";
 import * as Generators from "../../core/Generators";
@@ -108,6 +110,7 @@ export class TableViewComponent implements OnInit, OnDestroy {
   public constructor(
     @Inject(S.fightServiceToken) private fightService: S.IFightService,
     @Inject(gameServiceToken) private gameService: IGameService,
+    @Inject(nostrServiceToken) private nostrService: INostrService,
     private visStorage: VisStorageService,
     private notification: S.ScreenNotificationsService,
     private route: ActivatedRoute,
@@ -199,6 +202,20 @@ export class TableViewComponent implements OnInit, OnDestroy {
     this.subscribeToDispatcher(this.dispatcher);
 
     this.route.params.subscribe((r) => {
+      const pubToken = r.pubToken as string;
+      const idToken = r.idToken as string;
+      const viewmode = r.viewmode as string;
+      if (pubToken && idToken && viewmode) {
+        const decoded = this.nostrService.decodeUrlSegments(pubToken, idToken);
+        if (!decoded) {
+          this.notification.error("This share link is not valid.");
+          return;
+        }
+        this.template = viewmode;
+        this.loadFromNostr(decoded.pubkey, decoded.id);
+        return;
+      }
+
       const id = r.fightId as string;
       const template = r.template as string;
       if (id && template) {
@@ -250,22 +267,12 @@ export class TableViewComponent implements OnInit, OnDestroy {
                   const loadedData =
                     fight.data &&
                     (JSON.parse(fight.data) as IFightSerializeData);
-                  this.fightLineController.loadFight(
+                  this.finishLoad(
                     fight,
                     loadedData,
-                    value.map((cmd) => JSON.parse(cmd.data))
+                    value.map((cmd) => JSON.parse(cmd.data)),
+                    ref
                   );
-                  this.gameService.jobRegistry.setLevel(100);
-                  this.tpl = new this.templates[
-                    this.template.toLowerCase()
-                  ]();
-                  this.tplExecutedSub = this.tpl.onExecuted.subscribe(
-                    (data) => {
-                      this.fightLineController.combineAndExecute([data]);
-                    }
-                  );
-                  this.loadTable();
-                  ref.close();
                 },
                 error: (error) => {
                   console.error(error);
@@ -285,6 +292,59 @@ export class TableViewComponent implements OnInit, OnDestroy {
         }
       );
     });
+  }
+
+  /** Nostr-share counterpart of load() — mirrors FightLineComponent's loadFightFromNostr, minus
+   *  the local-draft staleness challenge: table view is read-only presentation, not a save
+   *  target, so there's no "which side is newer" question to resolve. */
+  private loadFromNostr(pubkey: string, id: string): void {
+    this.dialogService.executeWithLoading(
+      { text: "Loading from Nostr...", nostr: true },
+      (ref) => {
+        this.fightId = id;
+        this.nostrService.fetchFight(pubkey, id).subscribe({
+          next: (result) => {
+            const loadedData = JSON.parse(
+              result.content
+            ) as IFightSerializeData;
+            const fight: M.IFight = {
+              id,
+              name: result.name,
+              userName: pubkey.slice(0, 8),
+              data: result.content,
+              isDraft: false,
+              dateModified: result.publishedAt,
+              game: this.gameService.name,
+              nostr: { pubkey, id, visibility: result.visibility },
+            };
+            this.finishLoad(fight, loadedData, undefined, ref);
+          },
+          error: (error) => {
+            console.error(error);
+            this.notification.error(
+              error?.message ?? "Unable to load this shared fight."
+            );
+            ref.close();
+          },
+        });
+      }
+    );
+  }
+
+  private finishLoad(
+    fight: M.IFight,
+    loadedData: IFightSerializeData,
+    commands: any[] | undefined,
+    ref: { close: () => void }
+  ): void {
+    this.fightLineController.loadFight(fight, loadedData, commands);
+    this.gameService.jobRegistry.setLevel(100);
+    this.tpl = new this.templates[this.template.toLowerCase()]();
+    this.tplExecutedSub = this.tpl.onExecuted.subscribe((data) => {
+      this.fightLineController.combineAndExecute([data]);
+    });
+    this.loadTable();
+    ref.close();
   }
 
   private loadTable() {

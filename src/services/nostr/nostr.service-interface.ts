@@ -46,6 +46,8 @@ export interface INostrService {
 
   getShareUrl(docType: NostrDocType, pubkey: string, id: string): string;
   getRoutePath(docType: NostrDocType, pubkey: string, id: string): string;
+  getFightShareUrl(pubkey: string, id: string, viewmode?: string): string;
+  getFightRoutePath(pubkey: string, id: string, viewmode?: string): string;
   decodeUrlSegments(pubToken: string, idToken: string): { pubkey: string; id: string } | undefined;
   parsePubkeyInput(input: string): string;
 }

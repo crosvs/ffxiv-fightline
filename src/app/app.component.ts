@@ -5,6 +5,7 @@ import { DialogService } from 'src/services/DialogService';
 import { LocalStorageService } from 'src/services/LocalStorageService';
 import { environment } from "../environments/environment";
 import {TranslateService} from '@ngx-translate/core';
+import { isFightSharePath } from 'src/services/nostr/nostr-engine';
 
 @Component({
   selector: 'app-root',
@@ -41,7 +42,7 @@ export class AppComponent implements OnInit {
 
   private isSharedLinkEntry(): boolean {
     const path = this.location.path(false).replace(/^\/+/, "");
-    return path.startsWith("nostr/") || path.startsWith("fflogs/");
+    return path.startsWith("nostr/") || path.startsWith("fflogs/") || isFightSharePath(path);
   }
 
   showHelpForFirstTimers(): Promise<void> {

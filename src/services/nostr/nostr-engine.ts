@@ -602,20 +602,27 @@ function decodePubkeyToken(token: string): string | undefined {
   }
 }
 
+/** True when `path` (router-relative, no leading slash) opens on a fight share link —
+ *  `<pubToken>/<idToken>` or `<pubToken>/<idToken>/<viewmode>`. Used by AppComponent to detect a
+ *  "landed here via share link" entry point without hardcoding the URL shape in two places. */
+export function isFightSharePath(path: string): boolean {
+  const first = path.split('/')[0];
+  return !!first && decodePubkeyToken(first) !== undefined;
+}
+
 /** Accepts anything a user might reasonably paste when asked for an author: an npub, a raw hex
- *  pubkey, just the pubkey segment copied out of a share URL, or the whole share URL/link. */
+ *  pubkey, just the pubkey segment copied out of a share URL, or the whole share URL/link. Scans
+ *  every path segment for one that decodes as a 32-byte pubkey token rather than assuming a fixed
+ *  position — handles both the bare fight share form (`/<pubToken>/<idToken>`) and the longer
+ *  boss form (`/nostr/boss/<pubToken>/<idToken>`) without needing to know which one it is. */
 export function parseInputPubkey(input: string): string {
   input = input.trim();
 
-  const pathIdx = input.indexOf('/nostr/');
-  if (pathIdx !== -1) {
-    // rest is "<docType>/<pubToken>/<idToken>..." — skip the docType segment to reach the pubkey.
-    const afterNostr = input.slice(pathIdx + '/nostr/'.length);
-    const firstSlash = afterNostr.indexOf('/');
-    const rest = firstSlash > 0 ? afterNostr.slice(firstSlash + 1) : afterNostr;
-    const slash = rest.indexOf('/');
-    const pubSegment = slash > 0 ? rest.slice(0, slash) : rest;
-    const decoded = decodePubkeyToken(pubSegment);
+  const urlMatch = input.match(/^[a-z][a-z0-9+.-]*:\/\/[^/]+(\/.*)?$/i);
+  const path = urlMatch ? urlMatch[1] ?? '' : input;
+  for (const segment of path.split('/')) {
+    if (!segment) continue;
+    const decoded = decodePubkeyToken(segment);
     if (decoded) return decoded;
   }
 
@@ -632,17 +639,19 @@ export function parseInputPubkey(input: string): string {
     return input.toLowerCase();
   }
 
-  return decodePubkeyToken(input) ?? input;
+  return input;
 }
 
 // ── URL helpers ───────────────────────────────────────────────────────────────
-// fightline's route is a real path segment, `/nostr/<docType>/<pubToken>/<idToken>` — unlike
-// XIVPlan (which uses a `#/nostr/...` hash fragment throughout), fightline's router already uses
-// Angular's PathLocationStrategy everywhere else (`:fightId`, `fflogs/:code`, ...), and a hash
-// fragment is invisible to Angular's path-based route matching — it would need a separate,
-// special-cased parsing path alongside the router instead of a normal route. The extra `docType`
-// segment (absent from XIVPlan's URL) is needed since a URL alone must disambiguate a fight
-// share-link from a boss-variant share-link (two independent kind pairs, same pubkey namespace).
+// fightline's route is a real path segment — unlike XIVPlan (which uses a `#/nostr/...` hash
+// fragment throughout), fightline's router already uses Angular's PathLocationStrategy everywhere
+// else (`:fightId`, `fflogs/:code`, ...), and a hash fragment is invisible to Angular's path-based
+// route matching. Fight shares (the common case) drop straight to `/<pubToken>/<idToken>`, with an
+// optional `/<viewmode>` suffix selecting a table view instead of the default timeline (see
+// getFightShareUrl/getFightRoutePath below and TableViewComponent). Boss-variant shares are a rare,
+// one-shot import — the fetched boss becomes local timeline data immediately rather than staying a
+// persistent shareable view — and keep the longer, explicit `/nostr/boss/<pubToken>/<idToken>`
+// form via getNostrShareUrl/getNostrRoutePath, so the two never collide in the pubkey namespace.
 
 export type NostrDocType = 'fight' | 'boss';
 
@@ -673,6 +682,23 @@ export function getNostrRoutePath(docType: NostrDocType, pubkey: string, id: str
   const pubToken = bytesToBase64Url(hexToBytes(pubkey));
   const idToken = bytesToBase64Url(hexToBytes(id));
   return `/nostr/${docType}/${pubToken}/${idToken}`;
+}
+
+/** Bare fight share-link URL: `/<pubToken>/<idToken>`, or `/<pubToken>/<idToken>/<viewmode>` when
+ *  linking straight to a table view (see app-routing.module.ts's `:pubToken/:idToken/:viewmode`
+ *  route and TableViewComponent). */
+export function getFightShareUrl(pubkey: string, id: string, viewmode?: string): string {
+  const pubToken = bytesToBase64Url(hexToBytes(pubkey));
+  const idToken = bytesToBase64Url(hexToBytes(id));
+  return `${location.origin}${baseHref()}${pubToken}/${idToken}${viewmode ? `/${viewmode}` : ''}`;
+}
+
+/** The router-relative counterpart of {@link getFightShareUrl} — see {@link getNostrRoutePath}'s
+ *  doc comment for why a router-relative form is needed alongside the absolute one. */
+export function getFightRoutePath(pubkey: string, id: string, viewmode?: string): string {
+  const pubToken = bytesToBase64Url(hexToBytes(pubkey));
+  const idToken = bytesToBase64Url(hexToBytes(id));
+  return `/${pubToken}/${idToken}${viewmode ? `/${viewmode}` : ''}`;
 }
 
 export function decodeNostrUrlSegments(
