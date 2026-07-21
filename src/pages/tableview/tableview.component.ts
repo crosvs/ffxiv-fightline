@@ -219,6 +219,19 @@ export class TableViewComponent implements OnInit, OnDestroy {
         return;
       }
 
+      const code = r.code as string;
+      const fight = r.fight as string;
+      const fflogsTemplate = r.template as string;
+      if (code && fight && fflogsTemplate) {
+        if (!this.isValidTemplateName(fflogsTemplate)) {
+          this.notification.error("Unknown table view.");
+          return;
+        }
+        this.template = fflogsTemplate;
+        this.loadFromFFLogs(code, +fight);
+        return;
+      }
+
       const id = r.fightId as string;
       const template = r.template as string;
       if (id && template) {
@@ -354,13 +367,53 @@ export class TableViewComponent implements OnInit, OnDestroy {
   ): void {
     this.fightLineController.loadFight(fight, loadedData, commands);
     this.gameService.jobRegistry.setLevel(100);
+    this.attachTemplate();
+    this.loadTable();
+    ref.close();
+  }
+
+  /** FFLogs-import counterpart of load()/loadFromNostr() — mirrors FightLineComponent's
+   *  loadFFLogsData(), pulling live pull data from FFLogs rather than loading a previously-saved
+   *  snapshot. Needed because an FFLogs-sourced fight's fightId is minted by newFight() and never
+   *  actually persisted with content, so it can't be re-loaded by id like a local draft. */
+  private loadFromFFLogs(code: string, enc: number): void {
+    const stop = (ref: { close: () => void }) => {
+      this.progressBar.complete();
+      ref.close();
+    };
+
+    this.dialogService.executeWithLoading("Loading...", (ref) => {
+      this.progressBar.start();
+      this.gameService.dataService
+        .getEvents(code, enc, {}, (percentage) => this.progressBar.set(percentage * 100))
+        .then((parser) => {
+          try {
+            this.fightLineController.importFromFFLogs(`${code}:${enc}`, parser);
+            this.gameService.jobRegistry.setLevel(100);
+            this.attachTemplate();
+            this.loadTable();
+          } catch (error) {
+            console.error(error);
+            this.notification.error(
+              "We are unable to load this fight. Dev team is already informed about this case"
+            );
+          }
+          stop(ref);
+        })
+        .catch((error) => {
+          console.error(error);
+          this.notification.showUnableToImport();
+          stop(ref);
+        });
+    });
+  }
+
+  private attachTemplate(): void {
     this.tpl = new this.templates[this.template.toLowerCase()]();
     this.tplExecutedSub?.unsubscribe();
     this.tplExecutedSub = this.tpl.onExecuted.subscribe((data) => {
       this.fightLineController.combineAndExecute([data]);
     });
-    this.loadTable();
-    ref.close();
   }
 
   private loadTable() {

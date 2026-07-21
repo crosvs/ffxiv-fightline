@@ -5,6 +5,10 @@ import { TableViewComponent } from "../pages/tableview/tableview.component";
 import { HomeComponent } from "../pages/home/home.component";
 
 const routes: Routes = [
+  // Table view of a specific FFLogs pull — see fightline.component.ts's onTable(): an
+  // FFLogs-sourced fight's fightId is a throwaway id that's never actually persisted, so table
+  // view re-imports fresh from this URL instead of trying to load it by id like a local draft.
+  { path: "fflogs/:code/:fight/:template", component: TableViewComponent },
   { path: "fflogs/:code/:fight", component: FightLineComponent, /*canDeactivate: [CanDeactivateUnsaved]*/ },
   { path: "fflogs/:code", component: FightLineComponent, /*canDeactivate: [CanDeactivateUnsaved]*/ },
   { path: "boss/:boss", component: FightLineComponent, /*canDeactivate: [CanDeactivateUnsaved]*/ },
