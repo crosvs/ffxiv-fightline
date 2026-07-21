@@ -158,7 +158,7 @@ export class ToolbarComponent implements OnInit, OnDestroy {
   }
 
   generateNewKey(): void {
-    if (!confirm("This replaces your current Nostr identity with a brand-new one. Export your current key first if you want to keep access to anything published under it. Continue?")) {
+    if (!confirm("This replaces your current Nostr key with a brand-new one. Export your current key first if you want to keep access to anything published under it. Continue?")) {
       return;
     }
     this.nostrService.generateNewKey().subscribe(() => {

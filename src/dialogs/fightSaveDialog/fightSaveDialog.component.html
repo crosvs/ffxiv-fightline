@@ -10,8 +10,8 @@
   <div class="nostr-publish-section">
     <div class="nostr-publish-heading">
       <i nz-icon nzType="global"></i>
-      <strong>Share via Nostr</strong>
-      <span class="nostr-publish-subtitle">— a portable link anyone can open, no account needed</span>
+      <strong>Store on Nostr</strong>
+      <span class="nostr-publish-subtitle">— online storage for sharable URLs</span>
       <nostr-status *ngIf="saving && shareEnabled" [progress$]="nostrStatus.publishProgress$"></nostr-status>
       <nz-switch class="nostr-share-switch" [ngModel]="shareEnabled" (ngModelChange)="onShareToggleChange($event)"></nz-switch>
     </div>
@@ -21,7 +21,7 @@
         {{ visibility === 'public' ? 'Public' : 'Private' }}
       </button>
       <span class="nostr-visibility-hint">
-        {{ visibility === 'public' ? 'Anyone with the link can open it.' : 'Only opens with your Nostr key.' }}
+        {{ visibility === 'public' ? 'Anyone with the link can view it.' : 'Only viewable with your Nostr key. Can manage your Nostr keys in the top right.' }}
       </span>
     </div>
   </div>

@@ -75,11 +75,11 @@ export class FightSaveDialogComponent implements OnInit {
 
   get urlNote(): string {
     if (!this.shareEnabled) {
-      return "Local draft — only opens on this device, in this browser.";
+      return "Local draft — this link only opens on this device, in this browser. Use the 'Store on Nostr' option to create a portable link to this timeline.";
     }
     return this.visibility === "public"
-      ? "Public — anyone with this link can open it, no account needed."
-      : "Private — encrypted so only your Nostr key can open it (e.g. your other devices with that same key imported); not meant for sharing with others.";
+      ? "Public — anyone with this link can view it, no Nostr key needed."
+      : "Private — encrypted so only devices with your Nostr key can open it; not meant for sharing with others.";
   }
 
   onShareToggleChange(enabled: boolean): void {

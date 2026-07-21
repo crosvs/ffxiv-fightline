@@ -575,7 +575,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
     if (this.quickSaveState === "done") {
       return !shareEnabled ? "Saved" : visibility === "public" ? "Published" : "Uploaded";
     }
-    return !shareEnabled ? "Save Locally" : visibility === "public" ? "Save & Publish" : "Save & Upload";
+    return !shareEnabled ? "Save" : visibility === "public" ? "Save & Publish" : "Save & Upload";
   }
 
   get quickSaveIcon(): string {
