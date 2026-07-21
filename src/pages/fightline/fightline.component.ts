@@ -665,6 +665,14 @@ export class FightLineComponent implements OnInit, OnDestroy {
       url: opts.recentUrl,
     });
 
+    // A local draft that's already linked+enabled for Nostr sharing should show its shareable
+    // /nostr/... address bar immediately on load — not just after the next Save & Publish. The
+    // other load paths (a route already on /nostr/... , or a draft with sharing off) leave the
+    // current URL alone, since it's already correct for those cases.
+    if (fight.nostr && fight.nostrShareEnabled) {
+      this.location.replaceState(this.nostrService.getRoutePath("fight", fight.nostr.pubkey, fight.nostr.id));
+    }
+
     const settings = this.settingsService.load();
     this.presenterManager.setSettings(settings);
 
