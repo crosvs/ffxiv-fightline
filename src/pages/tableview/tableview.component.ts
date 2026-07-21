@@ -406,10 +406,13 @@ export class TableViewComponent implements OnInit, OnDestroy {
         },
       };
 
+      // Named "ff", not "fflogs" — despite the identical Cast/Damage options, this is NOT what
+      // buildTable() reads for row filtering (that's AttackRowExportTemplate.loadOptions()'s own
+      // "fflogs" setting in BaseExportTemplate.ts). This one only mirrors into
+      // presenter.fflogsSource, normally hidden (visible: false) since a standalone table-view tab
+      // never has the timeline's own filter panel around to flip it.
       const fflogs: ExportModels.BooleanOptionsSetting = {
         name: "ff",
-        // Always defaults to Cast — FFLogs damage events don't carry reliable damage values, so
-        // Damage isn't a usable default here regardless of what the fight's own filter saved.
         defaultValue: true,
         displayName: "FFLogs Attack Source",
         visible: this.visStorage.presenter.fflogsSource,

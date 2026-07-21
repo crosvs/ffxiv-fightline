@@ -50,7 +50,11 @@ export abstract class AttackRowExportTemplate extends TableViewTemplate<BossAtta
     return [
       {
         name: "fflogs",
-        defaultValue: false,
+        // Always defaults to Cast — FFLogs damage events don't carry reliable damage values, so
+        // Damage isn't a usable default here. This is the setting buildTable() below actually
+        // reads (context.options["fflogs"]) — not to be confused with TableViewComponent's own
+        // separate "ff" setting, which only feeds presenter.fflogsSource for cross-component sync.
+        defaultValue: true,
         displayName: "FFLogsSource",
         kind: TableOptionSettingType.Boolean,
         visible: true,
