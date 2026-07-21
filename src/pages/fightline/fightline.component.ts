@@ -313,12 +313,14 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   onTable(template: string) {
-    // Gated on fight.nostr alone, not nostrShareEnabled (which only governs whether a future Save
-    // re-publishes) — if a nostr link exists at all, that document is already reachable on relays,
-    // whether it got here via a load from someone else's share link or this device's own publish.
+    // Also gated on nostrShareEnabled, not just fight.nostr's presence — turning sharing off
+    // deliberately leaves fight.nostr populated (see its doc comment) so re-enabling later reuses
+    // the same link, but that means a disabled-but-still-linked fight can have newer local edits
+    // than whatever's on relays. Routing through the relay fetch in that case would silently show
+    // the stale published snapshot instead of the current local draft.
     const fight = this.fightLineController.data.fight;
     const path =
-      fight?.nostr?.pubkey && fight?.nostr?.id
+      fight?.nostr?.pubkey && fight?.nostr?.id && fight?.nostrShareEnabled
         ? this.nostrService.getFightRoutePath(fight.nostr.pubkey, fight.nostr.id, template)
         : this.router.serializeUrl(
             this.router.createUrlTree(["/table", this.fightId || "dummy", template])
@@ -705,9 +707,6 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
     const loadedData =
       fight.data && (JSON.parse(fight.data) as SerializeController.IFightSerializeData);
-    if (loadedData?.filter) {
-      this.presenterManager.filter = loadedData.filter;
-    }
     if (loadedData?.view) {
       this.presenterManager.view = loadedData.view;
     }

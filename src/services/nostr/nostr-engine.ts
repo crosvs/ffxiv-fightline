@@ -626,6 +626,14 @@ export function parseInputPubkey(input: string): string {
     if (decoded) return decoded;
   }
 
+  // A token encoded with standard base64 (not this app's own base64url, which never emits '/')
+  // would get incorrectly split apart by the loop above — fall back to decoding the whole path
+  // as one piece before giving up.
+  if (path) {
+    const wholePathDecoded = decodePubkeyToken(path);
+    if (wholePathDecoded) return wholePathDecoded;
+  }
+
   if (input.startsWith('npub1')) {
     try {
       const decoded = nip19.decode(input);

@@ -76,7 +76,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
   filtered: ExportModels.IExportRow[] = [];
   pagesize = Number.MAX_VALUE;
   private lvl: number;
-  private ff: boolean;
   tpl: TableViewTemplate;
 
   templates = {
@@ -206,6 +205,10 @@ export class TableViewComponent implements OnInit, OnDestroy {
       const idToken = r.idToken as string;
       const viewmode = r.viewmode as string;
       if (pubToken && idToken && viewmode) {
+        if (!this.isValidTemplateName(viewmode)) {
+          this.notification.error("Unknown table view.");
+          return;
+        }
         const decoded = this.nostrService.decodeUrlSegments(pubToken, idToken);
         if (!decoded) {
           this.notification.error("This share link is not valid.");
@@ -219,11 +222,23 @@ export class TableViewComponent implements OnInit, OnDestroy {
       const id = r.fightId as string;
       const template = r.template as string;
       if (id && template) {
+        if (!this.isValidTemplateName(template)) {
+          this.notification.error("Unknown table view.");
+          return;
+        }
         this.template = template;
         this.fightId = id;
         this.load(id);
       }
     });
+  }
+
+  // Both route shapes feed `template`/`viewmode` straight from the URL — the bare
+  // :pubToken/:idToken/:viewmode route is externally shareable/pastable, so an invalid or
+  // stale-after-a-rename value must fail cleanly here rather than reach `new this.templates[...]`
+  // in finishLoad(), which would throw on an unknown key and leave the loading dialog stuck open.
+  private isValidTemplateName(name: string): boolean {
+    return Object.prototype.hasOwnProperty.call(this.templates, name.toLowerCase());
   }
 
   private subscribeToDispatcher(
@@ -337,16 +352,10 @@ export class TableViewComponent implements OnInit, OnDestroy {
     commands: any[] | undefined,
     ref: { close: () => void }
   ): void {
-    // loadFight() ends with an argument-less applyFilter() call that re-applies whatever
-    // presenter.filter currently holds onto holders.bossAttacks — so without this, it silently
-    // overwrites the fight's own saved attack filter with the presenter's still-default one
-    // (a restrictive tag/source allowlist), hiding boss-attack rows despite jobs loading fine.
-    if (loadedData?.filter) {
-      this.visStorage.presenter.filter = loadedData.filter;
-    }
     this.fightLineController.loadFight(fight, loadedData, commands);
     this.gameService.jobRegistry.setLevel(100);
     this.tpl = new this.templates[this.template.toLowerCase()]();
+    this.tplExecutedSub?.unsubscribe();
     this.tplExecutedSub = this.tpl.onExecuted.subscribe((data) => {
       this.fightLineController.combineAndExecute([data]);
     });
@@ -406,27 +415,8 @@ export class TableViewComponent implements OnInit, OnDestroy {
         },
       };
 
-      // Named "ff", not "fflogs" — despite the identical Cast/Damage options, this is NOT what
-      // buildTable() reads for row filtering (that's AttackRowExportTemplate.loadOptions()'s own
-      // "fflogs" setting in BaseExportTemplate.ts). This one only mirrors into
-      // presenter.fflogsSource, normally hidden (visible: false) since a standalone table-view tab
-      // never has the timeline's own filter panel around to flip it.
-      const fflogs: ExportModels.BooleanOptionsSetting = {
-        name: "ff",
-        defaultValue: true,
-        displayName: "FFLogs Attack Source",
-        visible: this.visStorage.presenter.fflogsSource,
-        kind: ExportModels.TableOptionSettingType.Boolean,
-        description: "FFLogs Attack Source",
-        options: {
-          true: "Cast",
-          false: "Damage",
-        },
-      };
-
       this.options = [
         level,
-        fflogs,
         ...(this.tpl.loadOptions(this.visStorage.holders) || []),
         cellOptions,
         iconSize,
@@ -447,15 +437,11 @@ export class TableViewComponent implements OnInit, OnDestroy {
       });
 
       this.currentOptions = this.options.reduce((acc, c) => {
-        acc[c.name] = c.initialValue || c.defaultValue;
+        // ?? (not ||) — an explicit false/0/"" initialValue must survive; || would silently
+        // discard it whenever defaultValue happens to be truthy.
+        acc[c.name] = c.initialValue ?? c.defaultValue;
         return acc;
       }, {});
-    }
-
-    const ff = this.currentOptions.ff as boolean;
-    if (ff !== this.ff) {
-      this.visStorage.presenter.fflogsSource = ff;
-      this.ff = ff;
     }
 
     const lvl = this.currentOptions.l;
