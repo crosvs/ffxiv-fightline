@@ -77,10 +77,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
   pagesize = Number.MAX_VALUE;
   private lvl: number;
   private ff: boolean;
-  // Seeds the "ff" table option below from the loaded fight's own saved cast-vs-damage choice —
-  // buildTable() applies this independently of (in addition to) the holder-level attacks filter,
-  // so without it every row silently drops a second time whenever the saved choice isn't "damage".
-  private initialFfLogsSource = false;
   tpl: TableViewTemplate;
 
   templates = {
@@ -348,7 +344,6 @@ export class TableViewComponent implements OnInit, OnDestroy {
     if (loadedData?.filter) {
       this.visStorage.presenter.filter = loadedData.filter;
     }
-    this.initialFfLogsSource = loadedData?.filter?.attacks?.fflogsSource === "cast";
     this.fightLineController.loadFight(fight, loadedData, commands);
     this.gameService.jobRegistry.setLevel(100);
     this.tpl = new this.templates[this.template.toLowerCase()]();
@@ -413,7 +408,9 @@ export class TableViewComponent implements OnInit, OnDestroy {
 
       const fflogs: ExportModels.BooleanOptionsSetting = {
         name: "ff",
-        defaultValue: this.initialFfLogsSource,
+        // Always defaults to Cast — FFLogs damage events don't carry reliable damage values, so
+        // Damage isn't a usable default here regardless of what the fight's own filter saved.
+        defaultValue: true,
         displayName: "FFLogs Attack Source",
         visible: this.visStorage.presenter.fflogsSource,
         kind: ExportModels.TableOptionSettingType.Boolean,
