@@ -1,0 +1,55 @@
+<span
+  nz-popover
+  [nzPopoverTitle]="'Relay status'"
+  [nzPopoverContent]="relayBreakdown"
+  nzPopoverTrigger="hover"
+  class="nostr-status"
+>
+  <svg
+    [attr.width]="size"
+    [attr.height]="size"
+    [attr.viewBox]="'0 0 ' + svgSize + ' ' + svgSize"
+    class="nostr-status__svg"
+    role="img"
+    [attr.aria-label]="'Relay status'"
+    *ngIf="ring$ | async as ring"
+  >
+    <circle
+      [attr.cx]="svgSize / 2"
+      [attr.cy]="svgSize / 2"
+      [attr.r]="(svgSize - 2.5) / 2"
+      fill="none"
+      stroke="#d9d9d9"
+      stroke-width="2.5"
+    ></circle>
+    <circle
+      [class.nostr-status__spin]="ring.spin"
+      [attr.cx]="svgSize / 2"
+      [attr.cy]="svgSize / 2"
+      [attr.r]="(svgSize - 2.5) / 2"
+      fill="none"
+      [attr.stroke]="ring.ringColor"
+      stroke-width="2.5"
+      stroke-linecap="round"
+      [attr.stroke-dasharray]="ring.dashArray"
+      [attr.stroke-dashoffset]="ring.dashOffset"
+      [attr.transform]="'rotate(-90 ' + svgSize / 2 + ' ' + svgSize / 2 + ')'"
+    ></circle>
+    <circle
+      [attr.cx]="svgSize / 2"
+      [attr.cy]="svgSize / 2"
+      [attr.r]="(svgSize - 2.5) / 2 - 4"
+      [attr.fill]="dotColor$ | async"
+    ></circle>
+  </svg>
+</span>
+
+<ng-template #relayBreakdown>
+  <div class="nostr-status__breakdown">
+    <div class="nostr-status__row" *ngFor="let relay of relays$ | async">
+      <span class="nostr-status__dot" [style.backgroundColor]="dotColors[relay.status]"></span>
+      <span class="nostr-status__name">{{ displayUrl(relay.url) }}</span>
+      <span class="nostr-status__label">{{ relayLabel[relay.status] }}</span>
+    </div>
+  </div>
+</ng-template>

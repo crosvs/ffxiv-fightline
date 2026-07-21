@@ -1,0 +1,78 @@
+<nz-page-header class="noselect toolbar">
+  <nz-page-header-title>
+    <span style="margin-right: 10px;margin-left: 15px !important;" *ngIf="showHome">
+      <button nz-button (click)="onHome()" nz-tooltip nzTooltipTitle="{{'component.toolbar.home-tooltip' | translate}}">
+        <i nz-icon theme="twotone" nzType="home"></i>
+      </button>
+    </span>
+    <span>
+      <ng-content></ng-content>
+    </span>
+  </nz-page-header-title>
+  <nz-page-header-extra>
+    <ng-content select="[pre-right]"></ng-content>
+    <ng-content select="[right]"></ng-content>
+    <span>
+      <button nz-button nzShape="circle" nzType="primary" aria-label="Settings" nz-tooltip nzTooltipTitle="{{'component.toolbar.settings-tooltip' | translate}}"
+        (click)="openSettings()" style="margin-left: 10px">
+        <i nz-icon nzType="setting" aria-label="Settings"></i>
+      </button>
+    </span>
+    <span>
+      <button nz-button nzType="primary" aria-label="Github" nzShape="circle" nz-tooltip
+        nzTooltipTitle="{{'component.toolbar.leaveFeedback' | translate}}" (click)="gotoGithub()" style="margin-left: 10px">
+        <i nz-icon nzType="github" theme="outline"></i>
+      </button>
+    </span>
+    <span>
+      <button nz-button nzShape="circle" aria-label="Change Theme" nz-tooltip nzTooltipTitle="{{'component.toolbar.changeTheme' | translate}}"
+        (click)="changeTheme()" style="margin-left: 10px">
+        <span *ngIf="darkTheme">🌙</span>
+        <span *ngIf="!darkTheme">☀️</span>
+      </button>
+    </span>
+    <span>
+      <button nz-dropdown nz-button [nzDropdownMenu]="langMenu" aria-label="Language" [nzTrigger]="'click'" nzType="dashed"
+        nzShape="circle" style="margin-left: 10px">
+        {{currentLang}}
+      </button>
+      <nz-dropdown-menu #langMenu="nzDropdownMenu">
+        <ul nz-menu class="noselect">
+          <li nz-menu-item (click)="setLang('en')">EN</li>
+          <li nz-menu-item (click)="setLang('fr')">FR</li>
+          <li nz-menu-item (click)="setLang('de')">DE</li>
+          <li nz-menu-item (click)="setLang('ja')">JP</li>
+          <li nz-menu-item (click)="setLang('cn')">CN</li>
+        </ul>
+      </nz-dropdown-menu>
+    </span>
+    <span>
+      <button nz-dropdown nz-button aria-label="Nostr key" [nzDropdownMenu]="accountMenu" nz-tooltip
+        [nzTooltipTrigger]="'click'" nzShape="circle" nzTooltipTitle="Your Nostr key">
+        <i nz-icon nzType="key" aria-label="Nostr key"></i>
+      </button>
+      <nz-dropdown-menu #accountMenu="nzDropdownMenu">
+        <ul nz-menu class="noselect">
+          <li nz-menu-item disabled>{{ displayIdentity }}</li>
+          <li nz-menu-item (click)="exportKey()">Export key</li>
+          <li nz-menu-item (click)="importKeyInput.click()">Import key</li>
+          <li nz-menu-item (click)="generateNewKey()">Generate new key</li>
+        </ul>
+      </nz-dropdown-menu>
+      <input #importKeyInput type="file" accept=".txt" style="display: none"
+        (change)="onImportKeyFileSelected($event)" />
+    </span>
+    <span>
+      <button nz-dropdown nz-button [nzDropdownMenu]="helpMenu" aria-label="Help" [nzTrigger]="'click'" nzType="dashed"
+        nzShape="circle" style="margin-left: 10px">
+        <i nz-icon nzType="question" aria-label="Help"></i>
+      </button>
+      <nz-dropdown-menu #helpMenu="nzDropdownMenu">
+        <ul nz-menu class="noselect">
+          <li nz-menu-item (click)="showWhatsNewInt()">{{'component.toolbar.whatsNew' | translate}}</li>
+          <li nz-menu-item (click)="showHelp()">{{'component.toolbar.help' | translate}}</li>
+        </ul>
+      </nz-dropdown-menu>
+    </span>
+  </nz-page-header-extra>
+</nz-page-header>

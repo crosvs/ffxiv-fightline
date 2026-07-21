@@ -1,0 +1,14 @@
+<ng-container *ngIf="!data.nostr">
+  <nz-spin [nzSize]="'large'" [nzTip]="data.text">
+    <div class="loading-plain"></div>
+  </nz-spin>
+</ng-container>
+
+<div *ngIf="data.nostr" class="loading-nostr">
+  <nostr-status
+    [relayStatus$]="nostrStatus.fetchStatus$"
+    [progress$]="nostrStatus.consensusProgress$"
+    [size]="40"
+  ></nostr-status>
+  <span class="loading-nostr__text">{{ data.text }}</span>
+</div>

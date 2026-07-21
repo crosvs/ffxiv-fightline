@@ -1,0 +1,70 @@
+.nostr-publish-section {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(24, 144, 255, 0.04);
+}
+
+.nostr-publish-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.nostr-publish-subtitle {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  flex: 1;
+}
+
+:host-context(body.dark) .nostr-publish-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.nostr-share-switch {
+  margin-left: auto;
+}
+
+.nostr-visibility-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nostr-visibility-hint {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+:host-context(body.dark) .nostr-visibility-hint {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.share-url-section {
+  margin-top: 12px;
+}
+
+.share-url-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.share-url-row input {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.share-url-note {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+:host-context(body.dark) .share-url-note {
+  color: rgba(255, 255, 255, 0.45);
+}
