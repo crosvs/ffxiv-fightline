@@ -109,7 +109,7 @@ export class FFXIVJobRegistryService implements IJobRegistryService {
   }
 
   private getIcon(prefix: string, id: string) {
-    return `/assets/images/ffhqicons/${prefix}/${id}${
+    return `assets/images/ffhqicons/${prefix}/${id}${
       id.endsWith(".jpg") ? "" : ".png"
     }`;
   }
@@ -119,7 +119,7 @@ export class FFXIVJobRegistryService implements IJobRegistryService {
       return {
         ...a,
         icon: a.icon
-          ? `/assets/images/ffhqicons/${a.icon}${
+          ? `assets/images/ffhqicons/${a.icon}${
               a.icon.endsWith(".jpg") ? "" : ".png"
             }`
           : this.getIcon(

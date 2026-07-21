@@ -312,7 +312,7 @@ export function HttpLoaderFactory(http: HttpClient): TranslateHttpLoader {
       markedOptions: {
         provide: MARKED_OPTIONS,
         useValue: {
-          baseUrl: "/assets/images/changelog/",
+          baseUrl: "assets/images/changelog/",
         },
       },
     }),

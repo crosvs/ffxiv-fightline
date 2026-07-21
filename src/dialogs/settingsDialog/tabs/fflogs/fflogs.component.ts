@@ -123,9 +123,9 @@ export class SettingsDialogFflogsTabComponent implements OnInit, ISettingTab {
 
   container: any = {
     classes: [
-      { name: "Tank", icon: "/assets/images/JobIcons/clear_tank.png" },
-      { name: "Heal", icon: "/assets/images/JobIcons/clear_healer.png" },
-      { name: "DD", icon: "/assets/images/JobIcons/clear_dps.png" },
+      { name: "Tank", icon: "assets/images/JobIcons/clear_tank.png" },
+      { name: "Heal", icon: "assets/images/JobIcons/clear_healer.png" },
+      { name: "DD", icon: "assets/images/JobIcons/clear_dps.png" },
     ],
   };
 
