@@ -5,23 +5,23 @@ new Nostr semantics of its own — it's the React glue that turns `nostr.ts`'s e
 functions/stores into dialogs, buttons, and a data grid. XIVPlan's UI is built on Fluent UI
 (`@fluentui/react-components`) and `react-use`'s `useAsyncFn` (a `{ loading, error, value }`
 wrapper around an async action) — a port using a different design system only needs to replicate
-the *behavior* described here, not these exact libraries.
+the _behavior_ described here, not these exact libraries.
 
 ## Live-status hooks (`useSyncExternalStore` wrappers)
 
 Four tiny hooks, each subscribing to one of the shared pub/sub stores from
 [03-relay-pool-and-consensus.md](03-relay-pool-and-consensus.md):
 
-| Hook | Backing store | What it reflects |
-|---|---|---|
-| `useRelayStatus()` | `subscribeRelayStatus`/`getRelayStatus` | General connectivity — is each relay reachable right now, independent of any specific operation |
-| `useFetchStatus()` | `subscribeFetchStatus`/`getFetchStatus` | Per-relay outcome of whichever `fanGet` fetch is currently in flight |
-| `useConsensusProgress()` | `subscribeConsensusProgress`/`getConsensusProgress` | `{agreeing, threshold, total, status}` for an in-flight fetch |
-| `usePublishProgress()` | `subscribePublishProgress`/`getPublishProgress` | Same shape, for an in-flight publish |
+| Hook                     | Backing store                                       | What it reflects                                                                                |
+| ------------------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `useRelayStatus()`       | `subscribeRelayStatus`/`getRelayStatus`             | General connectivity — is each relay reachable right now, independent of any specific operation |
+| `useFetchStatus()`       | `subscribeFetchStatus`/`getFetchStatus`             | Per-relay outcome of whichever `fanGet` fetch is currently in flight                            |
+| `useConsensusProgress()` | `subscribeConsensusProgress`/`getConsensusProgress` | `{agreeing, threshold, total, status}` for an in-flight fetch                                   |
+| `usePublishProgress()`   | `subscribePublishProgress`/`getPublishProgress`     | Same shape, for an in-flight publish                                                            |
 
 All four use `useSyncExternalStore` rather than `useState`+`useEffect`, deliberately: some updates
 (e.g. the pool's connection-success/failure callbacks) can fire synchronously from deep inside
-another component's render, and a fetch can even be *kicked off* synchronously during render (via
+another component's render, and a fetch can even be _kicked off_ synchronously during render (via
 `use()` in the URL-loading path — see [07-sharing-and-urls.md](07-sharing-and-urls.md)).
 `useState`-based subscription risks a "setState while rendering a different component" React
 warning in that scenario; `useSyncExternalStore` is the mechanism React provides specifically for
@@ -65,7 +65,7 @@ gated behind a confirmation dialog warning that the old key's plans become un-re
 this browser, with an inline "save the current key first" affordance inside that same confirm
 step.
 
-## Publish flow (Save As / Share dialog)
+## Publish flow (Save/Share settings dialog)
 
 Two near-duplicate implementations exist — `SaveNostr` (the Nostr tab of the classic Save-As
 dialog) and `ShareDialogButton`'s `NostrTab` (the newer, unified Share dialog) — both following the
@@ -74,7 +74,7 @@ same shape:
 1. `NostrVaultList` (below) lets the user pick an existing plan to overwrite, or the pinned
    "New plan" row with an editable name + public/private toggle.
 2. A `canSave`/`canUpload` guard requires: a non-empty trimmed name, `relayStatus.anyConnected`,
-   and *something* that actually needs writing (new plan, different existing plan selected, dirty
+   and _something_ that actually needs writing (new plan, different existing plan selected, dirty
    scene, changed name, or changed visibility vs. whatever's currently open).
 3. Confirming (button click or Enter-in-name-field) calls
    `publishPlan(scene, name, visibility, existingId?)` via `useAsyncFn`, driving a
@@ -86,7 +86,7 @@ same shape:
 5. Both dialogs reset their "Published" view back to empty whenever they transition from
    closed→open (tracked via a `wasOpen`-style comparison during render, not a `useEffect`) —
    necessary because Fluent's `Dialog` doesn't unmount tab content between opens, so a stale
-   success screen (with live Retry buttons for a *different* plan) would otherwise persist across
+   success screen (with live Retry buttons for a _different_ plan) would otherwise persist across
    dialog reopens.
 
 `ShareDialogButton`'s version additionally has to pre-select the currently-open plan's row once
@@ -107,7 +107,7 @@ for links shared outside the app, e.g. via Discord) are the two entry points, bo
    `agreeingRelays < consensusThreshold(totalRelays)` — duplicated locally in each, rather than
    relying on the App-level consensus-warning effect below, since that one only fires for the
    direct-URL-navigation path.
-4. `ImportFromString` additionally accepts the *other* (non-Nostr) share format and raw encoded
+4. `ImportFromString` additionally accepts the _other_ (non-Nostr) share format and raw encoded
    scene text as fallbacks if the pasted text doesn't parse as a `#/nostr/...` link.
 
 ## `NostrVaultList` — the reusable vault data grid
@@ -137,8 +137,8 @@ Key behaviors:
   currently being viewed is the signer's own** (duplicates always land in the signer's vault
   regardless of which vault is being browsed, but only show up locally if that happens to be the
   same vault currently on screen).
-- **`refreshToken` prop**: an incrementing number a parent bumps to force a resync *from the
-  already-updated cache* (no cache-bust) after it — not this list — performed a mutation
+- **`refreshToken` prop**: an incrementing number a parent bumps to force a resync _from the
+  already-updated cache_ (no cache-bust) after it — not this list — performed a mutation
   elsewhere (e.g. a Share-dialog publish). This is the seam that lets a publish somewhere else in
   the UI reflect into this list without a relay round-trip, relying on the protocol layer's own
   optimistic cache upsert (see [06-vault-listing.md](06-vault-listing.md)).
@@ -158,9 +158,9 @@ interface NostrVaultListProps {
   showPublishAsNew?: boolean;
   newPlanName?: string;
   onNewPlanNameChange?: (value: string) => void;
-  renameSelectedInline?: boolean;   // edit selected row's name in place instead of a separate Edit dialog
-  visibility?: 'public' | 'private';
-  onVisibilityChange?: (value: 'public' | 'private') => void;
+  renameSelectedInline?: boolean; // edit selected row's name in place instead of a separate Edit dialog
+  visibility?: "public" | "private";
+  onVisibilityChange?: (value: "public" | "private") => void;
   selectedId: string | undefined;
   onSelectedChange: (item: NostrPlanInfo | undefined, pubkey: string | null) => void;
   onRowDoubleClick?: (item: NostrPlanInfo, pubkey: string) => void;
@@ -201,7 +201,7 @@ in a browser (a fresh tab, or pasted into an address bar):
    Nostr-specific.
 4. A `NostrConsensusWarning` component, mounted unconditionally, calls
    `consumeNostrFetchedConsensus()` once in an effect with an empty dependency array — a
-   *consuming* read (see [07-sharing-and-urls.md](07-sharing-and-urls.md)) so the "loaded from X/Y
+   _consuming_ read (see [07-sharing-and-urls.md](07-sharing-and-urls.md)) so the "loaded from X/Y
    relays" warning toast fires exactly once per navigation, immune to React StrictMode's dev-mode
    double-invoke of effects.
 

@@ -115,7 +115,7 @@ export class DialogService {
   openSaveFight(dataFn: () => any): Promise<IFight> {
     const dialogref = this.dialogs.create({
       nzWrapClassName: "vertical-center-modal",
-      nzTitle: "Save As",
+      nzTitle: "Save/Share settings",
       nzContent: D.FightSaveDialog,
       nzWidth: 700,
       nzClosable: false,
