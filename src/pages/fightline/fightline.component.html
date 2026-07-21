@@ -98,9 +98,9 @@
         nz-button
         [nzLoading]="quickSaveState === 'saving'"
         [disabled]="quickSaveState === 'done'"
-        (click)="quickSaveFight()"
+        (click)="onQuickSaveClick()"
         nz-tooltip
-        nzTooltipTitle="Save with previous settings"
+        [nzTooltipTitle]="needsSaveAs ? 'Name this fight and choose how to save it' : 'Save with previous settings'"
       >
         <i nz-icon [nzType]="quickSaveIcon"></i>{{ quickSaveLabel }}
       </button>

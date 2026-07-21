@@ -517,6 +517,24 @@ export class FightLineComponent implements OnInit, OnDestroy {
       });
   }
 
+  /** True when this fight has never actually been through Save/Publish — a blank new plan, an
+   *  FFLogs/boss-template import, or a Nostr load with no local counterpart. There's no remembered
+   *  name or sharing preference to reuse yet, so the toolbar's one-click button falls back to
+   *  opening the full "Save As" dialog instead of silently quick-saving under a placeholder name. */
+  get needsSaveAs(): boolean {
+    return !this.persistedLocally;
+  }
+
+  /** Click handler for the toolbar's primary save button — routes to the full dialog for a
+   *  never-saved fight (see needsSaveAs), otherwise to the one-click quickSaveFight() below. */
+  onQuickSaveClick(): void {
+    if (this.needsSaveAs) {
+      this.saveFight();
+      return;
+    }
+    this.quickSaveFight();
+  }
+
   /** One-click save using this fight's remembered name and Nostr-sharing preference — no dialog.
    *  The toolbar button itself is the status indicator (see quickSaveLabel/quickSaveIcon); this
    *  and the Save dialog's own Save button both go through the same saveFightAndMaybePublish()
@@ -566,6 +584,9 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   get quickSaveLabel(): string {
+    if (this.needsSaveAs) {
+      return "Save As";
+    }
     const fight = this.fightLineController.data.fight;
     const shareEnabled = !!fight?.nostrShareEnabled;
     const visibility = fight?.nostr?.visibility ?? "public";
@@ -579,6 +600,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   get quickSaveIcon(): string {
+    if (this.needsSaveAs) return "save";
     if (this.quickSaveState === "done") return "check";
     const fight = this.fightLineController.data.fight;
     if (!fight?.nostrShareEnabled) return "save";
