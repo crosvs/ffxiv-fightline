@@ -69,6 +69,11 @@ import { visibleFrameTemplate } from "src/core/Frame";
 export class FightLineComponent implements OnInit, OnDestroy {
   fightId: string;
   fflogsCode: string = null;
+  // The specific pull/fight number within fflogsCode's report, once one has been picked (either
+  // straight from a /fflogs/:code/:fight URL, or via the interactive import dialog navigating
+  // there) — lets onTable() route to a re-importable /fflogs/... table URL instead of the
+  // fightId-based one, which is never actually persisted for an FFLogs-sourced fight.
+  fflogsFight: number | null = null;
   // Tracks whether the currently loaded fight actually has an IndexedDB record backing it —
   // true for anything opened from a local draft (or a Nostr load that turned out to resolve to
   // one via the staleness challenge) or that's been through Save/Publish this session; false
@@ -319,12 +324,21 @@ export class FightLineComponent implements OnInit, OnDestroy {
     // than whatever's on relays. Routing through the relay fetch in that case would silently show
     // the stale published snapshot instead of the current local draft.
     const fight = this.fightLineController.data.fight;
-    const path =
-      fight?.nostr?.pubkey && fight?.nostr?.id && fight?.nostrShareEnabled
-        ? this.nostrService.getFightRoutePath(fight.nostr.pubkey, fight.nostr.id, template)
-        : this.router.serializeUrl(
-            this.router.createUrlTree(["/table", this.fightId || "dummy", template])
-          );
+    let path: string;
+    if (fight?.nostr?.pubkey && fight?.nostr?.id && fight?.nostrShareEnabled) {
+      path = this.nostrService.getFightRoutePath(fight.nostr.pubkey, fight.nostr.id, template);
+    } else if (this.fflogsCode && this.fflogsFight != null) {
+      // this.fightId for an FFLogs-sourced fight is a throwaway id minted by newFight() — it's
+      // never actually persisted with content, so /table/<fightId>/... can never load. Route
+      // back through the same re-importable FFLogs URL instead.
+      path = this.router.serializeUrl(
+        this.router.createUrlTree(["/fflogs", this.fflogsCode, this.fflogsFight, template])
+      );
+    } else {
+      path = this.router.serializeUrl(
+        this.router.createUrlTree(["/table", this.fightId || "dummy", template])
+      );
+    }
     window.open(path, "_blank");
   }
 
@@ -770,6 +784,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
   private onStart(r: ActivatedRouteSnapshot): void {
     this.fflogsCode = null;
+    this.fflogsFight = null;
     if (r.params.pubToken && r.params.idToken) {
       const decoded = this.nostrService.decodeUrlSegments(r.params.pubToken, r.params.idToken);
       if (!decoded) {
@@ -803,6 +818,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
           this.fflogsCode = code;
           const enc = r.params.fight;
           if (enc) {
+            this.fflogsFight = +enc;
             this.loadFFLogsData(code, +enc);
           } else {
             this.importFromFFLogs(code);
