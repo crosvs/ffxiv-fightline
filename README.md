@@ -34,9 +34,10 @@ browser, nothing proxies through this project.
 ## Deployment
 
 Pushing to `master` builds and deploys to GitHub Pages automatically
-(`.github/workflows/deploy-pages.yml`), publishing under the repo's default Pages subpath. The
-build passes `--base-href` accordingly; if you fork this and deploy to a custom domain instead,
-drop that flag (or set it to `/`) and add your own `CNAME`.
+(`.github/workflows/deploy-pages.yml`), publishing to the custom domain
+[timeline.xivoid.app](https://timeline.xivoid.app/) (the workflow writes the `CNAME` file into the
+build output on every deploy). If you fork this and deploy under the repo's default Pages subpath
+instead, add `--base-href /<repo-name>/` back to the build step and drop the `CNAME` step.
 
 ## Project layout
 

@@ -167,7 +167,7 @@ export class FightLoadDialogComponent implements OnInit {
   }
 
   selectVaultItem(item: NostrDocInfo): void {
-    const path = this.nostrService.getRoutePath("fight", this.vaultPubkey, item.id);
+    const path = this.nostrService.getFightRoutePath(this.vaultPubkey, item.id);
     this.dialogRef.afterClose.subscribe(() => {
       this.router.navigateByUrl(path);
     });

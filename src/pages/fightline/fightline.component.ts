@@ -313,12 +313,19 @@ export class FightLineComponent implements OnInit, OnDestroy {
   }
 
   onTable(template: string) {
-    window.open(
-      this.router.serializeUrl(
-        this.router.createUrlTree(["/table", this.fightId || "dummy", template])
-      ),
-      "_blank"
-    );
+    // Also gated on nostrShareEnabled, not just fight.nostr's presence — turning sharing off
+    // deliberately leaves fight.nostr populated (see its doc comment) so re-enabling later reuses
+    // the same link, but that means a disabled-but-still-linked fight can have newer local edits
+    // than whatever's on relays. Routing through the relay fetch in that case would silently show
+    // the stale published snapshot instead of the current local draft.
+    const fight = this.fightLineController.data.fight;
+    const path =
+      fight?.nostr?.pubkey && fight?.nostr?.id && fight?.nostrShareEnabled
+        ? this.nostrService.getFightRoutePath(fight.nostr.pubkey, fight.nostr.id, template)
+        : this.router.serializeUrl(
+            this.router.createUrlTree(["/table", this.fightId || "dummy", template])
+          );
+    window.open(path, "_blank");
   }
 
   // private openStanceSelector(data: M.IContextMenuData[]): void {
@@ -577,7 +584,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
     // shouldn't pay a relay round-trip just to reopen.
     this.location.replaceState(
       result.nostr && result.nostrShareEnabled
-        ? this.nostrService.getRoutePath("fight", result.nostr.pubkey, result.nostr.id)
+        ? this.nostrService.getFightRoutePath(result.nostr.pubkey, result.nostr.id)
         : `/${result.id}`
     );
     this.notification.showFightSaved();
@@ -692,7 +699,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
     // other load paths (a route already on /nostr/... , or a draft with sharing off) leave the
     // current URL alone, since it's already correct for those cases.
     if (fight.nostr && fight.nostrShareEnabled) {
-      this.location.replaceState(this.nostrService.getRoutePath("fight", fight.nostr.pubkey, fight.nostr.id));
+      this.location.replaceState(this.nostrService.getFightRoutePath(fight.nostr.pubkey, fight.nostr.id));
     }
 
     const settings = this.settingsService.load();
@@ -700,9 +707,6 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
     const loadedData =
       fight.data && (JSON.parse(fight.data) as SerializeController.IFightSerializeData);
-    if (loadedData?.filter) {
-      this.presenterManager.filter = loadedData.filter;
-    }
     if (loadedData?.view) {
       this.presenterManager.view = loadedData.view;
     }
@@ -766,14 +770,13 @@ export class FightLineComponent implements OnInit, OnDestroy {
 
   private onStart(r: ActivatedRouteSnapshot): void {
     this.fflogsCode = null;
-    const nostrDocType = r.params.docType;
-    if (nostrDocType) {
+    if (r.params.pubToken && r.params.idToken) {
       const decoded = this.nostrService.decodeUrlSegments(r.params.pubToken, r.params.idToken);
       if (!decoded) {
         this.notification.error("This share link is not valid.");
         return;
       }
-      if (nostrDocType === "boss") {
+      if (r.data.nostrDocType === "boss") {
         this.loadBossFromNostr(decoded.pubkey, decoded.id);
       } else {
         this.loadFightFromNostr(decoded.pubkey, decoded.id, r.queryParamMap.get("preset"));
@@ -822,7 +825,7 @@ export class FightLineComponent implements OnInit, OnDestroy {
       this.fightId = id;
       this.nostrService.fetchFight(pubkey, id).subscribe({
         next: (result) => {
-          const recentUrl = this.nostrService.getShareUrl("fight", pubkey, id);
+          const recentUrl = this.nostrService.getFightShareUrl(pubkey, id);
 
           // Challenge the fetched relay snapshot against any local draft already linked to this
           // same Nostr document (once consensus above has actually resolved a result). A local

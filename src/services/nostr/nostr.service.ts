@@ -10,6 +10,8 @@ import {
   exportSecretKeyBlob,
   getNostrShareUrl,
   getNostrRoutePath,
+  getFightShareUrl as getNostrFightShareUrl,
+  getFightRoutePath as getNostrFightRoutePath,
   decodeNostrUrlSegments,
   parseInputPubkey,
   NostrDocInfo,
@@ -112,6 +114,14 @@ export class NostrService implements INostrService {
 
   getRoutePath(docType: NostrDocType, pubkey: string, id: string): string {
     return getNostrRoutePath(docType, pubkey, id);
+  }
+
+  getFightShareUrl(pubkey: string, id: string, viewmode?: string): string {
+    return getNostrFightShareUrl(pubkey, id, viewmode);
+  }
+
+  getFightRoutePath(pubkey: string, id: string, viewmode?: string): string {
+    return getNostrFightRoutePath(pubkey, id, viewmode);
   }
 
   decodeUrlSegments(pubToken: string, idToken: string): { pubkey: string; id: string } | undefined {

@@ -65,7 +65,7 @@ export class FightSaveDialogComponent implements OnInit {
 
   get previewUrl(): string {
     if (this.shareEnabled && this.previewNostr) {
-      return this.nostrService.getShareUrl("fight", this.previewNostr.pubkey, this.previewNostr.id);
+      return this.nostrService.getFightShareUrl(this.previewNostr.pubkey, this.previewNostr.id);
     }
     if (!this.shareEnabled && this.data.id) {
       return `${location.origin}${baseHref()}${this.data.id}`;

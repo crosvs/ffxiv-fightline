@@ -26,7 +26,9 @@ export class TableViewOptionsComponent implements OnInit, OnDestroy {
 
   @Input() set settings(value: ITableOptionSettings) {
     this.settingsInternal = value;
-    this.options = this.settingsInternal?.reduce((acc, s) => { acc[s.name] = s.initialValue || s.defaultValue; return acc; }, {});
+    // ?? (not ||) — an explicit false/0/"" initialValue must survive; || would silently discard
+    // it whenever defaultValue happens to be truthy.
+    this.options = this.settingsInternal?.reduce((acc, s) => { acc[s.name] = s.initialValue ?? s.defaultValue; return acc; }, {});
     this.createForm(this.settingsInternal);
   }
 
@@ -37,7 +39,7 @@ export class TableViewOptionsComponent implements OnInit, OnDestroy {
 
     if (opts) {
       for (const d of opts) {
-        const value = d.initialValue || d.defaultValue;
+        const value = d.initialValue ?? d.defaultValue;
         groups[d.name] = new UntypedFormControl(value);
       }
     }

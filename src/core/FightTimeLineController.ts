@@ -992,7 +992,11 @@ export class FightTimeLineController {
       this.loading = false;
     }
 
-    this.applyFilter();
+    // Pass the fight's own filter explicitly rather than relying on whatever presenterManager.filter
+    // already holds — an argument-less call re-applies stale/default state instead of what this
+    // fight was just loaded with, a footgun every caller used to have to work around by manually
+    // pre-setting presenterManager.filter before calling loadFight() at all.
+    this.applyFilter(loadedData?.filter);
     this.applyView(loadedData.view, true);
 
     this.commandStorage.turnOnFireExecuted();
