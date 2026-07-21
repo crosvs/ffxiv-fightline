@@ -29,12 +29,16 @@ jobs:
 
       - run: npm ci
 
-      - run: npx ng build --configuration production --base-href /ffxiv-fightline/
+      - run: npx ng build --configuration production
 
       # GitHub Pages has no server-side rewrite for a path-based SPA router — it serves 404.html
       # for any unmatched path, so a direct link to e.g. /nostr/fight/... or a hard refresh needs
       # this to resolve to the same app shell Angular's router then takes over from client-side.
       - run: cp dist/browser/index.html dist/browser/404.html
+
+      # Custom domain (repo Settings > Pages > Custom domain). The Actions-based deploy needs the
+      # CNAME file inside the uploaded artifact on every run — it isn't preserved automatically.
+      - run: echo "timeline.xivoid.app" > dist/browser/CNAME
 
       - uses: actions/upload-pages-artifact@v3
         with:
