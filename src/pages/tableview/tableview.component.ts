@@ -337,6 +337,13 @@ export class TableViewComponent implements OnInit, OnDestroy {
     commands: any[] | undefined,
     ref: { close: () => void }
   ): void {
+    // loadFight() ends with an argument-less applyFilter() call that re-applies whatever
+    // presenter.filter currently holds onto holders.bossAttacks — so without this, it silently
+    // overwrites the fight's own saved attack filter with the presenter's still-default one
+    // (a restrictive tag/source allowlist), hiding boss-attack rows despite jobs loading fine.
+    if (loadedData?.filter) {
+      this.visStorage.presenter.filter = loadedData.filter;
+    }
     this.fightLineController.loadFight(fight, loadedData, commands);
     this.gameService.jobRegistry.setLevel(100);
     this.tpl = new this.templates[this.template.toLowerCase()]();
