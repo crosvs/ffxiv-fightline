@@ -1,6 +1,6 @@
-# XIVPlan Nostr Integration — Documentation
+# XIVoid Nostr Integration — Documentation
 
-This folder documents how XIVPlan uses the [Nostr](https://nostr.com/) protocol to publish,
+This folder documents how XIVoid uses the [Nostr](https://nostr.com/) protocol to publish,
 share, and sync raid-plan documents without a backend server. It exists so the same pattern can
 be replicated in other web apps — the immediate target being
 [ffxiv-fightline](https://github.com/Airex/ffxiv-fightline).
@@ -39,7 +39,7 @@ read-repair) exists specifically to paper over that unreliability.
 
 ## Source of truth
 
-All of this is derived from XIVPlan's own source, primarily:
+All of this is derived from XIVoid's own source, primarily:
 
 - [`src/file/nostr.ts`](../../src/file/nostr.ts) — the entire protocol layer (~1900 lines, no UI).
 - [`src/file/share.ts`](../../src/file/share.ts) — URL parsing/routing glue.
@@ -62,5 +62,5 @@ snapshot and should be updated alongside future changes to `nostr.ts`.
 encoding, and NIP-44 encryption. `localforage` is only used as an IndexedDB wrapper for the
 secret key (a plain `localStorage` string would also work, but wouldn't survive as gracefully
 across browsers/quota edge cases). Nothing else Nostr-specific is required — no relay SDK, no
-NIP-07 browser extension dependency (XIVPlan intentionally uses a locally-generated key instead
+NIP-07 browser extension dependency (XIVoid intentionally uses a locally-generated key instead
 of "login with Nostr extension").
